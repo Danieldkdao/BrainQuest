@@ -7,14 +7,17 @@ import {
   Platform,
   ScrollView,
   Image,
+  ActivityIndicator,
 } from "react-native";
 import React, { useState } from "react";
 import { useTheme } from "@/hooks/useTheme";
-import { useApp } from "@/hooks/usePuzzle";
+import { usePuzzle } from "@/hooks/usePuzzle";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import * as FileSystem from "expo-file-system";
-import { type PuzzleCategory, type PuzzleDifficulty } from "@/utils/types";
+import { Response, type PuzzleCategory, type PuzzleDifficulty } from "@/utils/types";
+import { useUser } from "@clerk/clerk-expo";
+import useApi from "@/utils/api";
 
 type InputFieldsType = {
   puzzle: string;
@@ -26,8 +29,10 @@ type InputFieldsType = {
 };
 
 const CreatePage = () => {
+  const api = useApi();
+  const { user } = useUser();
   const { colors } = useTheme();
-  const { changeSelectedComponent, categories, difficulties } = useApp();
+  const { changeSelectedComponent, categories, difficulties } = usePuzzle();
 
   const [inputFields, setInputFields] = useState<InputFieldsType>({
     puzzle: "",
@@ -62,6 +67,20 @@ const CreatePage = () => {
 
         if (!result.canceled) {
           setInputFields((prev) => ({ ...prev, image: result.assets[0].uri }));
+          if (result.assets[0].base64) {
+            setInputFields((prev) => ({
+              ...prev,
+              imageBase64: result.assets[0].base64 as string | null,
+            }));
+          } else {
+            const base64 = await FileSystem.readAsStringAsync(
+              result.assets[0].uri,
+              {
+                encoding: FileSystem.EncodingType.Base64,
+              }
+            );
+            setInputFields(prev => ({...prev, imageBase64: base64}));
+          }
         }
       }
     } catch (error) {
@@ -80,6 +99,36 @@ const CreatePage = () => {
         fileType && fileType ? `image/${fileType.toLowerCase()}` : "image/jpeg";
 
       const imageDataUrl = `data:${imageType};base64,${inputFields.imageBase64}`;
+      const body = {
+        question: inputFields.puzzle,
+        answer: inputFields.answer,
+        category: inputFields.category,
+        difficulty: inputFields.difficulty,
+        image: imageDataUrl,
+        creator: {
+          id: user?.id,
+          name: user?.fullName,
+          profileImage: user?.imageUrl,
+        }
+      }
+      const response = await api.post<Response>("/puzzles/create-puzzle", body, {
+        headers: {
+          "Content-Type": "application/json"
+        }
+      });
+
+      if(response.data.success){
+        setInputFields({
+          puzzle: "",
+          answer: "",
+          category: "logic",
+          difficulty: "easy",
+          image: null,
+          imageBase64: null,
+        });
+        console.log(response.data.message);
+        changeSelectedComponent(null);
+      }
     } catch (error) {
       console.error(error);
     } finally {
@@ -89,7 +138,7 @@ const CreatePage = () => {
 
   return (
     <View className="w-full h-full items-center">
-      <ScrollView className="w-[90%]" contentContainerClassName="pb-10">
+      <ScrollView className="w-full" contentContainerClassName="pb-10">
         <View className="flex-row justify-center relative py-2">
           <TouchableOpacity
             className="justify-self-start absolute left-0 top-0 bottom-0 justify-center"
@@ -114,6 +163,10 @@ const CreatePage = () => {
             Puzzle
           </Text>
           <TextInput
+            value={inputFields.puzzle}
+            onChangeText={(text) =>
+              setInputFields((prev) => ({ ...prev, puzzle: text }))
+            }
             placeholder="Enter the puzzle/riddle/brain teaser here"
             placeholderTextColor={colors.textMuted}
             multiline
@@ -129,11 +182,15 @@ const CreatePage = () => {
             Answer
           </Text>
           <TextInput
+            value={inputFields.answer}
+            onChangeText={(text) =>
+              setInputFields((prev) => ({ ...prev, answer: text }))
+            }
             placeholder="Enter the puzzle answer here"
             placeholderTextColor={colors.textMuted}
             multiline
             textAlignVertical="top"
-            className="border-2 px-4 h-24 rounded-xl text-lg"
+            className="border-2 px-4 h-28 rounded-xl text-lg"
             style={{
               color: colors.text,
               borderColor: colors.border,
@@ -250,18 +307,33 @@ const CreatePage = () => {
             })}
           </View>
           <TouchableOpacity
+            disabled={loading}
+            onPress={handleSubmit}
             className="rounded-xl border-2 py-3 mt-6"
             style={{
               backgroundColor: colors.surface,
               borderColor: colors.border,
+              opacity: loading ? 0.6 : 1,
             }}
           >
-            <Text
-              className="text-xl font-bold text-center"
-              style={{ color: colors.text }}
-            >
-              Create Puzzle
-            </Text>
+            {loading ? (
+              <View className="flex-row items-center gap-2 justify-center">
+                <ActivityIndicator color={colors.text} size={25} />
+                <Text
+                  className="text-xl font-bold text-center"
+                  style={{ color: colors.text }}
+                >
+                  Creating...
+                </Text>
+              </View>
+            ) : (
+              <Text
+                className="text-xl font-bold text-center"
+                style={{ color: colors.text }}
+              >
+                Create Puzzle
+              </Text>
+            )}
           </TouchableOpacity>
         </View>
       </ScrollView>

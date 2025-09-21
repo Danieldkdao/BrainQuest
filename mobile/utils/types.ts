@@ -8,30 +8,49 @@ export type Response<T extends keyof K = never, K = never> = {
 }
 
 export type Creator = {
+  id: string;
   name: string;
   profileImage: string;
 };
 
 export type Comment = {
+  _id: string;
   creator: Creator;
   content: string;
   createdAt: string;
 };
 
+export type Image = {
+  url: string;
+  publicId: string;
+}
+
 export type Puzzle = {
+  _id: string;
   question: string;
   answer: string;
   category: PuzzleCategory;
   difficulty: PuzzleDifficulty;
   creator: Creator;
-  likes: number;
-  dislikes: number;
+  likes: string[];
+  dislikes: string[];
   comments: Comment[];
-  attempts: number;
-  successes: number;
-  image: string;
+  attempts: string[];
+  successes: string[];
+  image: Image;
   createdAt: string;
-}
+};
+
+export type Session = {
+  _id: string;
+  user: string;
+  pointsEarned: number;
+  puzzlesAttempted: number;
+  puzzlesSolved: number;
+  timeLimit: number | string;
+  timeTaken: string;
+  createdAt: string;
+};
 
 export type PuzzleCategory =
   | "logic"

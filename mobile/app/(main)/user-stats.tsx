@@ -1,18 +1,16 @@
 import {
   View,
-  Text,
   ScrollView,
-  Dimensions,
   TouchableOpacity,
 } from "react-native";
 import React, { ReactNode, useState } from "react";
 import { useTheme } from "@/hooks/useTheme";
 import { Ionicons } from "@expo/vector-icons";
-import StatsPage from "@/components/userStats/stats";
-import BadgesPage from "@/components/userStats/badges";
-import LeaderboardPage from "@/components/userStats/leaderboard";
-import TrainingHistoryPage from "@/components/userStats/training-history";
-import MyPuzzlesPage from "@/components/userStats/my-puzzles";
+import StatsPage from "@/components/user-stats/stats";
+import BadgesPage from "@/components/user-stats/badges";
+import LeaderboardPage from "@/components/user-stats/leaderboard";
+import TrainingHistoryPage from "@/components/user-stats/training-history";
+import MyPuzzlesPage from "@/components/user-stats/my-puzzles";
 
 type TAB = {
   id: number;
@@ -52,8 +50,6 @@ const ChartsPage = () => {
   const { colors } = useTheme();
 
   const [selectedTab, setSelectedTab] = useState<TAB>(TABS[0]);
-
-  const screenWidth = Dimensions.get("screen").width;
 
   return (
     <View

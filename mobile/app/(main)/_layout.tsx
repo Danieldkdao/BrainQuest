@@ -46,7 +46,7 @@ const MainLayout = () => {
           }}
         />
         <Tabs.Screen
-          name="my-puzzles"
+          name="puzzling"
           options={{
             tabBarIcon: ({ color, size }) => {
               return (

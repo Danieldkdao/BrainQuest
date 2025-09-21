@@ -11,7 +11,7 @@ import React, { useState } from "react";
 import { useTheme } from "@/hooks/useTheme";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
-import api from "@/utils/api";
+import useApi from "@/utils/api";
 import { Puzzle, Response } from "@/utils/types";
 import { TrainingStatsType } from "./train";
 
@@ -28,7 +28,7 @@ type PuzzleScreenProps = {
 type AnswerType = {
   isCorrect: boolean;
   text: string;
-}
+};
 
 const PuzzleScreen = ({
   puzzles,
@@ -39,13 +39,13 @@ const PuzzleScreen = ({
   setTrainingStats,
   finish,
 }: PuzzleScreenProps) => {
-
   const PointsReference = {
     easy: 1,
     medium: 2,
     hard: 3,
-  }
+  };
 
+  const api = useApi();
   const { colors } = useTheme();
 
   const [isCorrect, setIsCorrect] = useState<AnswerType>({
@@ -68,17 +68,26 @@ const PuzzleScreen = ({
       });
 
       if (response.data.success) {
-        if(response.data.correct === true){
-          const points = PointsReference[puzzles[currentPuzzle].difficulty] * 15;
-          setTrainingStats(prev => ({...prev, pointsEarned: prev.pointsEarned + points, puzzlesSolved: prev.puzzlesSolved + 1}));
+        if (response.data.correct === true) {
+          const points =
+            PointsReference[puzzles[currentPuzzle].difficulty] * 15;
+          setTrainingStats((prev) => ({
+            ...prev,
+            pointsEarned: prev.pointsEarned + points,
+            puzzlesSolved: prev.puzzlesSolved + 1,
+          }));
         }
-        setTrainingStats(prev => ({...prev, puzzlesAttempted: prev.puzzlesAttempted + 1}))
+        setTrainingStats((prev) => ({
+          ...prev,
+          puzzlesAttempted: prev.puzzlesAttempted + 1,
+        }));
         setIsCorrect({
           text: response.data.message,
           isCorrect: response.data.correct ? response.data.correct : false,
         });
         setNoShowPrevAnswer(true);
       }
+      console.log(response.data.message);
     } catch (error) {
       console.error(error);
     } finally {
@@ -93,7 +102,7 @@ const PuzzleScreen = ({
       setPause(true);
       finish();
       return;
-    };
+    }
     setUserRes("");
     setCurrentPuzzle((prev) => prev + 1);
     setPause(false);
@@ -102,7 +111,7 @@ const PuzzleScreen = ({
   return (
     <ScrollView contentContainerClassName="gap-5" className="mt-10">
       <Image
-        source={{ uri: puzzles[currentPuzzle].image }}
+        source={{ uri: puzzles[currentPuzzle].image.url }}
         className="w-full h-[200px] rounded-xl"
       />
       <View
@@ -137,16 +146,16 @@ const PuzzleScreen = ({
         }}
       />
       <TouchableOpacity
-      disabled={loading}
+        disabled={loading}
         onPress={pause ? next : checkAnswer}
         className="rounded-xl overflow-hidden"
-        style={{opacity: loading ? 0.6 : 1}}
+        style={{ opacity: loading ? 0.6 : 1 }}
       >
         <LinearGradient className="py-3" colors={colors.gradients.empty}>
           {loading ? (
             <View className="w-full flex-row items-center justify-center gap-2">
-              <ActivityIndicator size={25} color={colors.text}/>
-              <Text className="text-xl font-bold">Checking...</Text>
+              <ActivityIndicator size={25} color={colors.text} />
+              <Text className="text-xl font-bold" style={{color: colors.text}}>Checking...</Text>
             </View>
           ) : (
             <Text

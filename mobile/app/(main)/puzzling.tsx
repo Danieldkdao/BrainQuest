@@ -1,12 +1,12 @@
-import { View, Text, ScrollView, TouchableOpacity } from "react-native";
+import { View, Text, TouchableOpacity } from "react-native";
 import React, { ReactNode, useState } from "react";
 import { useTheme } from "@/hooks/useTheme";
 import { Ionicons } from "@expo/vector-icons";
-import TrainPage from "@/components/myPuzzles/train";
-import CreatePage from "@/components/myPuzzles/create";
-import ChallengePage from "@/components/myPuzzles/challenge";
-import DiscoverPage from "@/components/myPuzzles/discover";
-import { useApp } from "@/hooks/usePuzzle";
+import TrainPage from "@/components/puzzling/train";
+import CreatePage from "@/components/puzzling/create";
+import ChallengePage from "@/components/puzzling/challenge";
+import DiscoverPage from "@/components/puzzling/discover";
+import { usePuzzle } from "@/hooks/usePuzzle";
 
 type ButtonType = {
   id: number;
@@ -48,7 +48,7 @@ const MyPuzzlesPage = () => {
   ];
 
   const { colors } = useTheme();
-  const { selectedComponent, changeSelectedComponent } = useApp();
+  const { selectedComponent, changeSelectedComponent } = usePuzzle();
 
   return (
     <View
@@ -57,9 +57,8 @@ const MyPuzzlesPage = () => {
         backgroundColor: colors.bg,
       }}
     >
-      <ScrollView
-        contentContainerClassName="h-full items-center justify-center gap-3"
-        className="w-[90%]"
+      <View
+        className="h-full items-center justify-center gap-3 w-[90%]"
       >
         {selectedComponent
           ? selectedComponent
@@ -94,7 +93,7 @@ const MyPuzzlesPage = () => {
                 </View>
               );
             })}
-      </ScrollView>
+      </View>
     </View>
   );
 };

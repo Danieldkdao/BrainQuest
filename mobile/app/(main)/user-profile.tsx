@@ -7,18 +7,15 @@ import {
   Alert,
   ScrollView,
   TextInput,
-  NativeSyntheticEvent,
-  TextInputChangeEventData,
 } from "react-native";
-import React, { ChangeEvent, useState } from "react";
+import React, { useState } from "react";
 import { useTheme } from "@/hooks/useTheme";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
 import { useClerk, useUser } from "@clerk/clerk-expo";
 import * as Linking from "expo-linking";
 import ToolTip from "@/components/ToolTip";
-import { useApp } from "@/hooks/usePuzzle";
+import { usePuzzle } from "@/hooks/usePuzzle";
 
 type Goal = {
   goal: number;
@@ -33,12 +30,17 @@ type ToolTipProps = {
   pointsGoal: Goal;
 };
 
+export const convertDate = (d: Date | null | undefined | string) => {
+  if (!d) return "";
+  const date = new Date(d);
+  return date.toDateString();
+};
+
 const UserProfilePage = () => {
   const { colors, isDarkMode, toggleDarkMode } = useTheme();
   const { signOut } = useClerk();
   const { user } = useUser();
-  const router = useRouter();
-  const { confirm } = useApp();
+  const { confirm } = usePuzzle();
 
   const [visible, setVisible] = useState<ToolTipProps>({
     darkMode: false,
@@ -71,12 +73,6 @@ const UserProfilePage = () => {
         "Logout failed due to error. Please try again later."
       );
     }
-  };
-
-  const convertDate = (d: Date | null | undefined) => {
-    if (!d) return "";
-    const date = new Date(d);
-    return date.toDateString();
   };
 
   const handleGoalInput = (num?: number, forPoints?: boolean) => {

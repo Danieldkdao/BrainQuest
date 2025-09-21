@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import React, { useEffect, useState } from "react";
 import { useTheme } from "@/hooks/useTheme";
-import { useApp } from "@/hooks/usePuzzle";
+import { usePuzzle } from "@/hooks/usePuzzle";
 import { Ionicons } from "@expo/vector-icons";
 import ReactNativeModal from "react-native-modal";
 import { LinearGradient } from "expo-linear-gradient";
@@ -17,8 +17,10 @@ import {
   type PuzzleDifficulty,
   type PuzzleCategory,
   Puzzle,
+  Response,
 } from "@/utils/types";
 import PuzzleScreen from "./puzzle-screen";
+import useApi from "@/utils/api";
 
 type SettingsType = {
   difficulties: PuzzleDifficulty[];
@@ -36,6 +38,7 @@ export type TrainingStatsType = {
 };
 
 const TrainPage = () => {
+  const api = useApi();
   const { colors } = useTheme();
   const {
     changeSelectedComponent,
@@ -43,7 +46,7 @@ const TrainPage = () => {
     categories,
     difficulties,
     fetchPuzzles,
-  } = useApp();
+  } = usePuzzle();
 
   const [settings, setSettings] = useState<SettingsType>({
     difficulties: [],
@@ -81,6 +84,32 @@ const TrainPage = () => {
 
     return () => clearInterval(timer);
   }, [startSession, pause, settings.timeLimit]);
+
+  const saveSession = async (leave: boolean) => {
+    setLoading(true);
+    try {
+      const times = calcTimeTaken();
+      const body = {
+        pointsEarned: trainingStats.pointsEarned,
+        puzzlesAttempted: trainingStats.puzzlesAttempted,
+        puzzlesSolved: trainingStats.puzzlesSolved,
+        timeLimit: times.timeLimit,
+        timeTaken: times.timeTaken,
+      };
+      const response = await api.post<Response>("/train/save-session", body);
+      if (response.data.success) {
+        if (leave) {
+          changeSelectedComponent(null);
+        } else {
+          reset();
+        }
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const confirmQuit = async () => {
     const isOk = await confirm(
@@ -144,11 +173,15 @@ const TrainPage = () => {
   };
 
   const calcTimeTaken = () => {
-    if (settings.timeLimit === "None") return "None Specified";
+    if (settings.timeLimit === "None")
+      return { timeLimit: "None", timeTaken: "None Specified" };
     const timeTaken =
       Number(settings.timePerQuestion) * puzzles.length -
       Number(settings.timeLimit);
-    return `${String(Math.floor(timeTaken / 60)).padStart(2, "0")}:${String(timeTaken % 60).padStart(2, "0")}`;
+    const timeLimit = Number(settings.timePerQuestion) * puzzles.length;
+    const timeTakenString = `${String(Math.floor(timeTaken / 60)).padStart(2, "0")}:${String(timeTaken % 60).padStart(2, "0")}`;
+    const timeLimitString = `${String(Math.floor(timeLimit / 60)).padStart(2, "0")}:${String(timeLimit % 60).padStart(2, "0")}`;
+    return { timeTaken: timeTakenString, timeLimit: timeLimitString };
   };
 
   return (
@@ -179,7 +212,9 @@ const TrainPage = () => {
               </Text>
               <Text className="text-lg" style={{ color: colors.text }}>
                 Time Taken:{" "}
-                <Text className="text-xl font-medium">{calcTimeTaken()}</Text>
+                <Text className="text-xl font-medium">
+                  {calcTimeTaken().timeTaken}
+                </Text>
               </Text>
               <Text className="text-lg" style={{ color: colors.text }}>
                 Puzzles Attempted:{" "}
@@ -195,29 +230,41 @@ const TrainPage = () => {
               </Text>
               <View className="flex-row gap-3 mt-3">
                 <TouchableOpacity
+                  disabled={loading}
                   className="flex-1 rounded-xl overflow-hidden"
-                  onPress={() => changeSelectedComponent(null)}
+                  onPress={() => saveSession(true)}
+                  style={{ opacity: loading ? 0.6 : 1 }}
                 >
                   <LinearGradient
                     colors={colors.gradients.danger}
                     className="py-3"
                   >
-                    <Text className="text-center text-xl font-semibold text-white">
-                      Leave
-                    </Text>
+                    {loading ? (
+                      <ActivityIndicator color="white" size={25} />
+                    ) : (
+                      <Text className="text-center text-xl font-semibold text-white">
+                        Leave
+                      </Text>
+                    )}
                   </LinearGradient>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  onPress={reset}
+                  disabled={loading}
+                  onPress={() => saveSession(false)}
                   className="flex-1 rounded-xl overflow-hidden"
+                  style={{ opacity: loading ? 0.6 : 1 }}
                 >
                   <LinearGradient
                     colors={colors.gradients.success}
                     className=" py-3"
                   >
-                    <Text className="text-center text-xl font-semibold text-white">
-                      Start New
-                    </Text>
+                    {loading ? (
+                      <ActivityIndicator color="white" size={25} />
+                    ) : (
+                      <Text className="text-center text-xl font-semibold text-white">
+                        Start New
+                      </Text>
+                    )}
                   </LinearGradient>
                 </TouchableOpacity>
               </View>
@@ -235,7 +282,7 @@ const TrainPage = () => {
                   Settings
                 </Text>
                 <TouchableOpacity onPress={() => changeSelectedComponent(null)}>
-                  <Ionicons name="close-circle" size={32} color={colors.text}/>
+                  <Ionicons name="close-circle" size={32} color={colors.text} />
                 </TouchableOpacity>
               </View>
               <Text style={{ color: colors.textMuted }}>
@@ -451,7 +498,7 @@ const TrainPage = () => {
         </View>
       </ReactNativeModal>
 
-      <ScrollView className="w-[90%]" contentContainerClassName="pb-10">
+      <ScrollView className="w-full" contentContainerClassName="pb-10">
         <View className="flex-row justify-center relative py-2">
           <TouchableOpacity
             className="absolute left-0 top-0 bottom-0 justify-center"
@@ -483,7 +530,7 @@ const TrainPage = () => {
             </Text>
           </View>
         </View>
-        <Text className="text-center text-xl">
+        <Text className="text-center text-xl" style={{ color: colors.text }}>
           {startSession && `${currentPuzzle + 1} of ${puzzles.length} puzzles`}
         </Text>
         {startSession ? (

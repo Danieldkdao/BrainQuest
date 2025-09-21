@@ -8,7 +8,7 @@ import {
   PuzzleCategory,
   PuzzleDifficulty,
 } from "@/utils/types";
-import api from "@/utils/api";
+import useApi from "@/utils/api";
 
 type PuzzleContextType = {
   selectedComponent: null | ReactNode;
@@ -80,6 +80,8 @@ export const PuzzleContextProvider = ({ children }: { children: ReactNode }) => 
       iconName: "skull-outline",
     },
   ];
+  
+  const api = useApi();
   const [selectedComponent, setSelectedComponent] = useState<null | ReactNode>(
     null
   );
@@ -137,11 +139,11 @@ export const PuzzleContextProvider = ({ children }: { children: ReactNode }) => 
   );
 };
 
-export const useApp = () => {
+export const usePuzzle = () => {
   const context = useContext(PuzzleContext);
   if (!context)
     throw new Error(
-      "App context must be used inside the app context provider."
+      "Puzzle context must be used inside the puzzle context provider."
     );
 
   return context;

@@ -1,4 +1,4 @@
-import mongoose, { Document, Schema, Model } from 'mongoose';
+import mongoose, { Document, Schema, Model } from "mongoose";
 
 export type PuzzleCategory =
   | "logic"
@@ -12,6 +12,7 @@ export type PuzzleCategory =
 export type PuzzleDifficulty = "easy" | "medium" | "hard";
 
 export type Creator = {
+  id: string;
   name: string;
   profileImage: string;
 };
@@ -20,7 +21,12 @@ export type Comment = {
   creator: Creator;
   content: string;
   createdAt: Date;
-}
+};
+
+export type Image = {
+  url: string;
+  publicId: string;
+};
 
 export interface IPuzzle extends Document {
   question: string;
@@ -28,40 +34,52 @@ export interface IPuzzle extends Document {
   category: PuzzleCategory;
   difficulty: PuzzleDifficulty;
   creator: Creator;
-  likes: number;
-  dislikes: number;
+  likes: string[];
+  dislikes: string[];
   comments: Comment[];
-  attempts: number;
-  successes: number;
-  image: string;
+  attempts: string[];
+  successes: string[];
+  image: Image;
   createdAt: Date;
 }
 
-const CommentSchema = new Schema<Comment>({
-  creator: {
-    name: { type: String, required: true },
-    profileImage: { type: String, required: true },
+const CommentSchema = new Schema<Comment>(
+  {
+    creator: {
+      id: { type: String, required: true },
+      name: { type: String, required: true },
+      profileImage: { type: String, required: true },
+    },
+    content: { type: String, required: true },
   },
-  content: { type: String, required: true },
-}, {timestamps: true});
+  { timestamps: true }
+);
 
-const PuzzleSchema = new Schema<IPuzzle>({
-  question: { type: String, required: true, unique: true },
-  answer: { type: String, required: true },
-  category: { type: String, required: true },
-  difficulty: { type: String, required: true },
-  creator: {
-    name: { type: String, required: true },
-    profileImage: { type: String, required: true },
+const PuzzleSchema = new Schema<IPuzzle>(
+  {
+    question: { type: String, required: true, unique: true },
+    answer: { type: String, required: true },
+    category: { type: String, required: true },
+    difficulty: { type: String, required: true },
+    creator: {
+      id: { type: String, required: true },
+      name: { type: String, required: true },
+      profileImage: { type: String, required: true },
+    },
+    likes: { type: [String], default: [] },
+    dislikes: { type: [String], default: [] },
+    comments: { type: [CommentSchema], default: [] },
+    attempts: { type: [String], default: [] },
+    successes: { type: [String], default: [] },
+    image: {
+      url: { type: String, required: true },
+      publicId: { type: String, required: true },
+    },
   },
-  likes: { type: Number, default: 0 },
-  dislikes: { type: Number, default: 0 },
-  comments: { type: [CommentSchema], default: [] },
-  attempts: { type: Number, default: 0 },
-  successes: { type: Number, default: 0 },
-  image: { type: String, required: true },
-}, {timestamps: true});
+  { timestamps: true }
+);
 
-const puzzleModel: Model<IPuzzle> = mongoose.models.Puzzle || mongoose.model("Puzzle", PuzzleSchema);
+const puzzleModel: Model<IPuzzle> =
+  mongoose.models.Puzzle || mongoose.model("Puzzle", PuzzleSchema);
 
 export default puzzleModel;

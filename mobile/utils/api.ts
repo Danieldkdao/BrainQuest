@@ -1,7 +1,30 @@
+import { useAuth } from "@clerk/clerk-expo";
 import axios from "axios";
+import { useMemo } from "react";
 
-const api = axios.create({
-  baseURL: "http://10.0.2.2:5000/api",
-});
+const useApi = () => {
+  const { getToken, isSignedIn } = useAuth();
 
-export default api;
+  const api = useMemo(() => {
+    const instance = axios.create({
+      baseURL: "http://10.0.2.2:5000/api",
+    });
+
+    instance.interceptors.request.use(async (config) => {
+      if(isSignedIn){
+        const token = await getToken();
+        config.headers = config.headers || {};
+        if(!(config.headers instanceof axios.AxiosHeaders)){
+          config.headers = new axios.AxiosHeaders(config.headers);
+        }
+        config.headers.set("Authorization", `Bearer ${token}`);
+      }
+      return config;
+    });
+    return instance;
+  }, [getToken, isSignedIn]);
+
+  return api;
+}
+
+export default useApi;

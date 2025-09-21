@@ -1,15 +1,15 @@
 import { View, Text, TouchableOpacity } from "react-native";
 import React from "react";
 import { useTheme } from "@/hooks/useTheme";
-import { useApp } from "@/hooks/usePuzzle";
+import { usePuzzle } from "@/hooks/usePuzzle";
 
-const DiscoverPage = () => {
+const ChallengePage = () => {
   const { colors } = useTheme();
-  const { changeSelectedComponent } = useApp();
+  const { changeSelectedComponent } = usePuzzle();
 
   return (
     <View>
-      <Text>DiscoverPage</Text>
+      <Text>ChallengePage</Text>
       <TouchableOpacity onPress={() => changeSelectedComponent(null)}>
         <Text>Click me</Text>
       </TouchableOpacity>
@@ -17,4 +17,4 @@ const DiscoverPage = () => {
   );
 };
 
-export default DiscoverPage;
+export default ChallengePage;

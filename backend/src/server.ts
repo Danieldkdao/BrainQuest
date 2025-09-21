@@ -6,6 +6,7 @@ import { route as trainRoute } from "./routes/train.route.ts";
 import { route as puzzleRoute } from "./routes/puzzle.route.ts";
 import puzzleModel from "./models/puzzle.model.ts";
 import { clerkMiddleware } from "@clerk/express";
+import trainingSessionModel from "./models/training-session.model.ts";
 
 dotenv.config();
 const app = express();
@@ -19,17 +20,19 @@ app.use(
     origin: "",
   })
 );
-app.use(clerkMiddleware({
-  publishableKey: process.env.CLERK_PUBLISHABLE_KEY!,
-  secretKey: process.env.CLERK_SECRET_KEY!,
-}));
+app.use(
+  clerkMiddleware({
+    publishableKey: process.env.CLERK_PUBLISHABLE_KEY!,
+    secretKey: process.env.CLERK_SECRET_KEY!,
+  })
+);
 
 app.use("/api/puzzles", puzzleRoute);
 app.use("/api/train", trainRoute);
 
 app.get("/", async (req: Request, res: Response) => {
-  const puzzles = await puzzleModel.find();
-  res.json({ puzzles });
+  const r = await puzzleModel.find();
+  res.json(r);
 });
 
 app.listen(PORT, () => console.log(`Server running on port ${PORT}.`));

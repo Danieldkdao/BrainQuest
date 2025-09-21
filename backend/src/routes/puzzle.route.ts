@@ -1,6 +1,27 @@
-import express from 'express';
-import { getPuzzles } from '../controllers/puzzles.controller.ts';
+import express from "express";
+import { protectRoute } from "../middlewares/auth.middleware.ts";
+import {
+  createPuzzle,
+  deletePuzzle,
+  dislike,
+  getComments,
+  getPopularPuzzles,
+  getPuzzles,
+  getUserPuzzles,
+  like,
+  postComment,
+} from "../controllers/puzzle.controller.ts";
 
 export const route = express.Router();
 
+route.use(protectRoute);
+
+route.get("/get-user-puzzles", getUserPuzzles);
+route.post("/create-puzzle", createPuzzle);
 route.post("/get-puzzles", getPuzzles);
+route.delete("/delete-puzzle/:id", deletePuzzle);
+route.get("/get-popular-puzzles", getPopularPuzzles);
+route.post("/post-comment", postComment);
+route.get("/get-comments/:id", getComments);
+route.put("/like-puzzle", like);
+route.put("/dislike-puzzle", dislike);
