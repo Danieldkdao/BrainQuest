@@ -2,11 +2,23 @@ import { getAuth } from "@clerk/express";
 import axios from "axios";
 import { type Request, type Response } from "express";
 import trainingSessionModel from "../models/training-session.model.ts";
-import puzzleModel from "../models/puzzle.model.ts";
+import puzzleModel, {
+  type PuzzleCategory,
+  type PuzzleDifficulty,
+} from "../models/puzzle.model.ts";
+import userModel, { type PuzzleCategoryData } from "../models/user.model.ts";
+
+const PointsReference = {
+  easy: 1,
+  medium: 2,
+  hard: 3,
+};
 
 type CheckAnswerBody = {
   response: string;
   answer: string;
+  difficulty: PuzzleDifficulty;
+  category: PuzzleCategory;
   id?: string;
 };
 
@@ -46,16 +58,53 @@ type SaveTSBody = {
   timeTaken: string;
 };
 
+const updatePercentageText = async (userId: string | null) => {
+  try {
+    const categoryDataObject: {
+      puzzleCategoryData: PuzzleCategoryData[];
+    } | null = await userModel.findOne(
+      { userId },
+      { puzzleCategoryData: 1, _id: 0 }
+    );
+    if (!categoryDataObject)
+      return { success: false, message: "User doesn't exist!" };
+    const categoryData = categoryDataObject.puzzleCategoryData;
+    const totalValue = categoryData.reduce((a, b) => a + b.value, 0);
+    const newData: PuzzleCategoryData[] = categoryData.map((item) => {
+      return {
+        value: item.value,
+        color: item.color,
+        label: item.label,
+        text: `${Math.round((item.value / totalValue) * 100)}%`,
+        focused: item.label === "Logic",
+      };
+    });
+    await userModel.updateOne(
+      { userId },
+      { $set: { puzzleCategoryData: newData } }
+    );
+  } catch (error) {
+    console.error(error);
+  }
+};
+
+
+
 export const checkAnswer = async (
   req: Request<{}, {}, CheckAnswerBody>,
   res: Response
 ) => {
   const { userId } = getAuth(req);
-  const { response, answer, id } = req.body;
+  const { response, answer, difficulty, category, id } = req.body;
   try {
-    if(id && userId){
+    if (id && userId) {
       const puzzle = await puzzleModel.findById(id);
-      if(puzzle?.attempts.includes(userId)) return res.json({success: true, message: "Sorry, you've already attempted this puzzle previously.", correct: false});
+      if (puzzle?.attempts.includes(userId))
+        return res.json({
+          success: true,
+          message: "Sorry, you've already attempted this puzzle previously.",
+          correct: false,
+        });
     }
     const checkResponse = await axios.post<OpenRouterChatCompletion>(
       "https://openrouter.ai/api/v1/chat/completions",
@@ -83,23 +132,103 @@ export const checkAnswer = async (
     if (id) {
       await puzzleModel.findByIdAndUpdate(id, { $push: { attempts: userId } });
     }
+    const numDate = Date.now();
+    const date = new Date(numDate);
+    const day = date.toLocaleDateString("en-US", { weekday: "short" });
     const isCorrect = checkResponse.data.choices[0].message.content;
+    let send;
+    let pointsEarned = 0;
     if (isCorrect === "true") {
-      if(id){
-        await puzzleModel.findByIdAndUpdate(id, { $push: { successes: userId } });
+      if (id) {
+        await puzzleModel.findByIdAndUpdate(id, {
+          $push: { successes: userId },
+        });
       }
-      res.json({
+      pointsEarned = PointsReference[difficulty] * 15;
+      send = {
         success: true,
         message: `Correct! The answer is ${answer}`,
         correct: true,
-      });
+      };
     } else {
-      res.json({
+      send = {
         success: true,
         message: `Sorry, incorrect... The answer is ${answer}`,
         correct: false,
-      });
+      };
     }
+    const result = await userModel.updateOne(
+      {
+        userId,
+      },
+      {
+        $inc: {
+          puzzles: 1,
+          todayPuzzles: 1,
+          points: pointsEarned,
+          todayPoints: pointsEarned,
+          "weekPuzzles.$[week].data.$[day].value": 1,
+          "weekPoints.$[week].data.$[day].value": pointsEarned,
+        },
+      },
+      {
+        arrayFilters: [
+          { "week.from": { $lte: numDate }, "week.to": { $gte: numDate } },
+          { "day.label": day },
+        ],
+      }
+    );
+    if (result.modifiedCount === 0) {
+      await userModel.updateOne(
+        {
+          userId,
+        },
+        {
+          $push: {
+            weekPuzzles: {
+              from: numDate,
+              to: numDate * 7 * 24 * 60 * 60 * 1000,
+              data: [
+                { label: "Mon", value: day === "Mon" ? 1 : 0 },
+                { label: "Tue", value: day === "Tue" ? 1 : 0 },
+                { label: "Wed", value: day === "Wed" ? 1 : 0 },
+                { label: "Thu", value: day === "Thu" ? 1 : 0 },
+                { label: "Fri", value: day === "Fri" ? 1 : 0 },
+                { label: "Sat", value: day === "Sat" ? 1 : 0 },
+                { label: "Sun", value: day === "Sun" ? 1 : 0 },
+              ],
+            },
+            weekPoints: {
+              from: numDate,
+              to: numDate * 7 * 24 * 60 * 60 * 1000,
+              data: [
+                { label: "Mon", value: day === "Mon" ? pointsEarned : 0 },
+                { label: "Tue", value: day === "Tue" ? pointsEarned : 0 },
+                { label: "Wed", value: day === "Wed" ? pointsEarned : 0 },
+                { label: "Thu", value: day === "Thu" ? pointsEarned : 0 },
+                { label: "Fri", value: day === "Fri" ? pointsEarned : 0 },
+                { label: "Sat", value: day === "Sat" ? pointsEarned : 0 },
+                { label: "Sun", value: day === "Sun" ? pointsEarned : 0 },
+              ],
+            },
+          },
+        }
+      );
+    }
+    await userModel.updateOne(
+      {
+        userId,
+        "puzzleCategoryData.label":
+          category.charAt(0).toUpperCase() + category.slice(1),
+      },
+      {
+        $inc: { "puzzleCategoryData.$.value": 1 },
+      }
+    );
+    if (id) {
+      await updatePercentageText(userId);
+    }
+    res.json(send);
   } catch (error) {
     console.error(error);
     res.json({
@@ -132,6 +261,7 @@ export const saveTrainingSession = async (
       timeTaken,
     });
     await newSession.save();
+    await updatePercentageText(userId);
     res.json({
       success: true,
       message: "Training session saved successfully!",

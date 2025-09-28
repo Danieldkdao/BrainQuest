@@ -22,18 +22,6 @@ const BadgesPage = () => {
       description: "Earned for completing your very first brain exercise.",
     },
     {
-      id: 2,
-      title: "Streak Seeker",
-      icon: "flame", // 🔥
-      description: "Awarded for keeping up a 3-day streak of exercises.",
-    },
-    {
-      id: 3,
-      title: "Memory Wizard",
-      icon: "sparkles", // ✨ wizard vibe
-      description: "Unlocked after completing 10 memory challenges.",
-    },
-    {
       id: 4,
       title: "Logic Master",
       icon: "extension-puzzle", // 🧩
@@ -52,28 +40,22 @@ const BadgesPage = () => {
       description: "You did an exercise session after 11 PM.",
     },
     {
-      id: 7,
-      title: "Quick Thinker",
-      icon: "speedometer", // ⚡ fast
-      description: "Completed an exercise in under 30 seconds.",
-    },
-    {
       id: 8,
-      title: "Consistency Crown",
-      icon: "trophy", // 👑
+      title: "Hot Streak",
+      icon: "flame", // 👑
       description: "Logged in and trained 7 days in a row.",
     },
     {
       id: 9,
-      title: "Focus Champion",
-      icon: "aperture", // 🎯
-      description: "Scored 100% accuracy in an attention exercise.",
+      title: "Braniac",
+      icon: "school", // 🎓 brainy
+      description: "Reached 5000 points in one day.",
     },
     {
       id: 10,
-      title: "Brainiac",
-      icon: "school", // 🎓 brainy
-      description: "Reached 1,000 total points across all exercises.",
+      title: "Master",
+      icon: "star", // 🎓 brainy
+      description: "Reached 100,000 total points across all exercises.",
     },
   ];
 

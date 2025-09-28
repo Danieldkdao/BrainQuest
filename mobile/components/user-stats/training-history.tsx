@@ -7,11 +7,14 @@ import SessionCard from "./session-card";
 import { usePuzzle } from "@/hooks/usePuzzle";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import TrainPage from "../puzzling/train";
 
 const TrainingHistoryPage = () => {
   const api = useApi();
-  const { confirm } = usePuzzle();
+  const { confirm, changeSelectedComponent } = usePuzzle();
   const { colors } = useTheme();
+  const router = useRouter();
 
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
@@ -37,7 +40,7 @@ const TrainingHistoryPage = () => {
   };
 
   const clearSessionHistory = async () => {
-    if(sessions.length === 0) return;
+    if (sessions.length === 0) return;
     const isOk = await confirm(
       "Confirm Delete Action",
       "Are you sure you want to clear your session history? This action is irreversable."
@@ -55,6 +58,11 @@ const TrainingHistoryPage = () => {
     }
   };
 
+  const redirectTrain = () => {
+    router.push("/(main)/puzzling");
+    changeSelectedComponent(<TrainPage />);
+  };
+
   return (
     <View className="w-[90%]">
       <View className="flex-row justify-between items-center mb-5">
@@ -64,7 +72,7 @@ const TrainingHistoryPage = () => {
         <TouchableOpacity
           disabled={sessions.length === 0}
           className="rounded-xl overflow-hidden"
-          style={{opacity: sessions.length === 0 ? 0.6 : 1}}
+          style={{ opacity: sessions.length === 0 ? 0.6 : 1 }}
           onPress={clearSessionHistory}
         >
           <LinearGradient
@@ -78,8 +86,46 @@ const TrainingHistoryPage = () => {
       </View>
       {loading ? (
         <ActivityIndicator color={colors.text} size={50} className="mt-52" />
+      ) : sessions.length === 0 ? (
+        <View
+          className="border-2 p-5 rounded-xl items-center gap-2"
+          style={{
+            backgroundColor: colors.surface,
+            borderColor: colors.border,
+          }}
+        >
+          <Ionicons name="barbell" color={colors.text} size={70} />
+          <Text className="text-2xl font-bold" style={{ color: colors.text }}>
+            No Sessions Yet
+          </Text>
+          <Text className="text-center" style={{ color: colors.textMuted }}>
+            Start a training session to level up your critical thinking skills
+            and rise up the leaderboard!
+          </Text>
+          <TouchableOpacity
+            onPress={redirectTrain}
+            className="rounded-xl overflow-hidden"
+          >
+            <LinearGradient
+              className="flex-row items-center gap-2 py-2 px-4"
+              colors={colors.gradients.empty}
+            >
+              <Ionicons
+                name="arrow-forward-circle"
+                color={colors.text}
+                size={30}
+              />
+              <Text
+                className="text-xl font-medium"
+                style={{ color: colors.text }}
+              >
+                Start Session
+              </Text>
+            </LinearGradient>
+          </TouchableOpacity>
+        </View>
       ) : (
-        <View className="gap-4">
+        <View className="gap-4 pb-10">
           {sessions.map((item) => {
             return (
               <SessionCard

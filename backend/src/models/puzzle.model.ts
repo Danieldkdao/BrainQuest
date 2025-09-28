@@ -73,7 +73,7 @@ const PuzzleSchema = new Schema<IPuzzle>(
     successes: { type: [String], default: [] },
     image: {
       url: { type: String, required: true },
-      publicId: { type: String, required: true },
+      publicId: { type: String },
     },
   },
   { timestamps: true }

@@ -65,6 +65,8 @@ const PuzzleScreen = ({
       >("/train/check-answer", {
         response: userRes,
         answer: puzzles[currentPuzzle].answer,
+        difficulty: puzzles[currentPuzzle].difficulty,
+        category: puzzles[currentPuzzle].category,
       });
 
       if (response.data.success) {

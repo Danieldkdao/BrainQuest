@@ -5,110 +5,45 @@ import {
   Dimensions,
   TouchableOpacity,
 } from "react-native";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useTheme } from "@/hooks/useTheme";
 import { BarChart, PieChart } from "react-native-gifted-charts";
 import { Ionicons } from "@expo/vector-icons";
 import * as Progress from "react-native-progress";
-
-type ExerciseData = {
-  value: number;
-  color: string;
-  text: string;
-  label: string;
-  focused: boolean;
-};
+import { type PuzzleCategoryData } from "@/utils/types";
+import { useAppUser } from "@/hooks/useAppUser";
+import { convertDate } from "@/app/(main)/user-profile";
 
 const StatsPage = () => {
-  const weeklyExerciseData = [
-    { value: 5, label: "Mon" },
-    { value: 8, label: "Tue" },
-    { value: 6, label: "Wed" },
-    { value: 0, label: "Thu" },
-    { value: 7, label: "Fri" },
-    { value: 10, label: "Sat" },
-    { value: 4, label: "Sun" },
-  ];
-
-  const weeklyExerciseData2 = [
-    { value: 50, label: "Mon" },
-    { value: 80, label: "Tue" },
-    { value: 60, label: "Wed" },
-    { value: 38, label: "Thu" },
-    { value: 71, label: "Fri" },
-    { value: 19, label: "Sat" },
-    { value: 41, label: "Sun" },
-  ];
-
-  const exerciseCategoryData: ExerciseData[] = [
-    {
-      value: 20,
-      color: "#4F46E5", // indigo
-      text: "20%",
-      label: "Logic",
-      focused: true,
-    },
-    {
-      value: 18,
-      color: "#10B981", // emerald
-      text: "18%",
-      label: "Math",
-      focused: false,
-    },
-    {
-      value: 22,
-      color: "#F59E0B", // amber
-      text: "22%",
-      label: "Wordplay",
-      focused: false,
-    },
-    {
-      value: 16,
-      color: "#EF4444", // red
-      text: "16%",
-      label: "Lateral",
-      focused: false,
-    },
-    {
-      value: 12,
-      color: "#3B82F6", // blue
-      text: "12%",
-      label: "Patterns",
-      focused: false,
-    },
-    {
-      value: 8,
-      color: "#8B5CF6", // violet
-      text: "8%",
-      label: "Classic",
-      focused: false,
-    },
-    {
-      value: 4,
-      color: "#06B6D4", // cyan
-      text: "4%",
-      label: "Trivia",
-      focused: false,
-    },
-  ];
-
-  const width = Dimensions.get("screen").width;
-
+  const { userSettings, changeUserSettingState } = useAppUser();
   const { colors } = useTheme();
 
-  const [categoryData, setCategoryData] =
-    useState<ExerciseData[]>(exerciseCategoryData);
-  const [selectedPiece, setSelectedPiece] = useState<ExerciseData>(
-    exerciseCategoryData[0]
+  const width = Dimensions.get("screen").width;
+  const fallbackBarData = [{ value: 0, label: "" }];
+  const fallbackPieData = [{ value: 1, label: "Loading", color: "#ccc" }];
+
+  const [selectedPiece, setSelectedPiece] = useState<PuzzleCategoryData | null>(
+    () => (userSettings?.puzzleCategoryData ?? [])[0] ?? null
   );
 
-  const toggleSelectedPiece = (data: ExerciseData) => {
-    setCategoryData(
-      (prev) =>
-        (prev = exerciseCategoryData.map((item) => {
-          if (item.label === data.label) return { ...item, focused: true };
-          return { ...item, focused: false };
-        }))
+  useEffect(() => {
+    if (
+      !selectedPiece &&
+      userSettings?.puzzleCategoryData &&
+      userSettings.puzzleCategoryData.length > 0
+    ) {
+      setSelectedPiece(userSettings?.puzzleCategoryData[0]);
+    }
+  }, [userSettings, selectedPiece]);
+
+  const toggleSelectedPiece = (data: PuzzleCategoryData) => {
+    if (selectedPiece?.label === data.label) return;
+    const changedArray = (userSettings?.puzzleCategoryData ?? []).map(
+      (item) => ({ ...item, focused: item.label === data.label })
+    );
+    changeUserSettingState<"puzzleCategoryData">(
+      "puzzleCategoryData",
+      changedArray
     );
     setSelectedPiece(data);
   };
@@ -133,21 +68,26 @@ const StatsPage = () => {
           }}
         >
           <Text className="text-2xl font-bold" style={{ color: colors.text }}>
-            Weekly Exercises
+            Weekly Puzzles
           </Text>
           <View className="w-full items-center justify-center flex-row">
             <TouchableOpacity>
               <Ionicons name="chevron-back" color={colors.text} size={28} />
             </TouchableOpacity>
             <Text style={{ color: colors.text }}>
-              Mon Sep 8 2025 - Sun Sep 14 2025
+              {convertDate(userSettings?.weekPuzzles?.[0]?.from)} -{" "}
+              {convertDate(userSettings?.weekPuzzles?.[0]?.to)}
             </Text>
             <TouchableOpacity>
               <Ionicons name="chevron-forward" color={colors.text} size={28} />
             </TouchableOpacity>
           </View>
           <BarChart
-            data={weeklyExerciseData}
+            data={
+              userSettings?.weekPuzzles?.[0]?.data?.length
+                ? userSettings.weekPuzzles[0].data
+                : fallbackBarData
+            }
             yAxisIndicesColor={colors.text}
             xAxisLabelTextStyle={{
               color: colors.text,
@@ -171,7 +111,6 @@ const StatsPage = () => {
             width={width * 0.75}
           />
         </View>
-
         <View
           className="border-2 rounded-xl p-5 gap-3"
           style={{
@@ -187,14 +126,19 @@ const StatsPage = () => {
               <Ionicons name="chevron-back" color={colors.text} size={28} />
             </TouchableOpacity>
             <Text style={{ color: colors.text }}>
-              Mon Sep 8 2025 - Sun Sep 14 2025
+              {convertDate(userSettings?.weekPoints?.[0]?.from)} -{" "}
+              {convertDate(userSettings?.weekPoints?.[0]?.to)}
             </Text>
             <TouchableOpacity>
               <Ionicons name="chevron-forward" color={colors.text} size={28} />
             </TouchableOpacity>
           </View>
           <BarChart
-            data={weeklyExerciseData2}
+            data={
+              userSettings?.weekPoints?.[0]?.data?.length
+                ? userSettings.weekPoints[0].data
+                : fallbackBarData
+            }
             yAxisIndicesColor={colors.text}
             xAxisLabelTextStyle={{
               color: colors.text,
@@ -228,12 +172,16 @@ const StatsPage = () => {
           <View className="gap-3">
             <PieChart
               radius={width * 0.3}
-              data={categoryData}
+              data={
+                userSettings?.puzzleCategoryData.length
+                  ? userSettings.puzzleCategoryData
+                  : fallbackPieData
+              }
               donut
               fontWeight="bold"
               innerCircleColor={colors.surface}
               sectionAutoFocus
-              onPress={(item: ExerciseData) => toggleSelectedPiece(item)}
+              onPress={(item: PuzzleCategoryData) => toggleSelectedPiece(item)}
               innerRadius={width * 0.2}
               centerLabelComponent={() => {
                 return (
@@ -244,19 +192,22 @@ const StatsPage = () => {
                         color: colors.text,
                       }}
                     >
-                      {selectedPiece.text}
+                      {selectedPiece?.text}
                     </Text>
                     <Text className="text-2xl" style={{ color: colors.text }}>
-                      {selectedPiece.label}
+                      {selectedPiece?.label}
                     </Text>
                   </View>
                 );
               }}
             />
             <View className="w-full items-center justify-start flex-row flex-wrap max-w-[240px] gap-2">
-              {categoryData.map((item, index) => {
+              {(userSettings?.puzzleCategoryData ?? []).map((item, index) => {
                 return (
-                  <View key={index} className="flex-row items-center gap-2 max-w-[120px]">
+                  <View
+                    key={index}
+                    className="flex-row items-center gap-2 max-w-[120px]"
+                  >
                     <View
                       className="h-4 w-4 rounded-full"
                       style={{
@@ -284,12 +235,26 @@ const StatsPage = () => {
             borderColor: colors.border,
           }}
         >
-          <Text className="text-center text-2xl font-bold" style={{color: colors.text}}>Goal Progress</Text>
+          <Text
+            className="text-center text-2xl font-bold"
+            style={{ color: colors.text }}
+          >
+            Goal Progress
+          </Text>
           <View className="w-full flex-row justify-between">
             <View className="gap-3">
-              <Text className="text-xl font-medium text-center" style={{color: colors.text}}>Exercises</Text>
+              <Text
+                className="text-xl font-medium text-center"
+                style={{ color: colors.text }}
+              >
+                Puzzles
+              </Text>
               <Progress.Circle
-                progress={0.4}
+                progress={
+                  userSettings?.todayPuzzles && userSettings?.puzzleGoal
+                    ? userSettings.todayPuzzles / userSettings.puzzleGoal
+                    : 0
+                }
                 size={width * 0.35}
                 borderWidth={0}
                 unfilledColor={colors.textMuted}
@@ -302,9 +267,18 @@ const StatsPage = () => {
               />
             </View>
             <View className="gap-3">
-              <Text className="text-xl font-medium text-center" style={{color: colors.text}}>Points</Text>
+              <Text
+                className="text-xl font-medium text-center"
+                style={{ color: colors.text }}
+              >
+                Points
+              </Text>
               <Progress.Circle
-                progress={0.4}
+                progress={
+                  userSettings?.todayPoints && userSettings?.pointsGoal
+                    ? userSettings.todayPoints / userSettings.pointsGoal
+                    : 0
+                }
                 size={width * 0.35}
                 borderWidth={0}
                 unfilledColor={colors.textMuted}

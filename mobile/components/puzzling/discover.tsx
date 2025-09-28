@@ -12,11 +12,12 @@ import { Ionicons } from "@expo/vector-icons";
 import { Puzzle, Response } from "@/utils/types";
 import useApi from "@/utils/api";
 import PuzzleCard from "./puzzle-card";
+import { categories } from "@/utils/utils";
 
 const DiscoverPage = () => {
   const api = useApi();
   const { colors } = useTheme();
-  const { changeSelectedComponent, categories } = usePuzzle();
+  const { changeSelectedComponent } = usePuzzle();
 
   const [popularPuzzles, setPopularPuzzles] = useState<Puzzle[]>([]);
   const [loading, setLoading] = useState(true);

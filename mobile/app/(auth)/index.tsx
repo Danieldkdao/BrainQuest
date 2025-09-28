@@ -1,6 +1,5 @@
 import { useTheme } from "@/hooks/useTheme";
 import { useSocialAuth } from "@/hooks/useSocialAuth";
-import { useRouter } from "expo-router";
 import {
   ActivityIndicator,
   Image,
@@ -11,7 +10,6 @@ import {
 
 export default function Index() {
   const { isLoading, handleSocialAuth } = useSocialAuth();
-  const router = useRouter();
   const { colors } = useTheme();
 
   return (

@@ -8,7 +8,7 @@ import {
   ScrollView,
   TextInput,
 } from "react-native";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useTheme } from "@/hooks/useTheme";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
@@ -16,45 +16,45 @@ import { useClerk, useUser } from "@clerk/clerk-expo";
 import * as Linking from "expo-linking";
 import ToolTip from "@/components/ToolTip";
 import { usePuzzle } from "@/hooks/usePuzzle";
-
-type Goal = {
-  goal: number;
-  shown: boolean;
-};
+import useApi from "@/utils/api";
+import { Response, User } from "@/utils/types";
+import { useAppUser } from "@/hooks/useAppUser";
 
 type ToolTipProps = {
   darkMode: boolean;
   notifications: boolean;
   leaderboard: boolean;
-  exerciseGoal: Goal;
-  pointsGoal: Goal;
+  puzzleGoal: boolean;
+  pointsGoal: boolean;
 };
 
-export const convertDate = (d: Date | null | undefined | string) => {
+export const convertDate = (d: Date | null | undefined | string | number) => {
   if (!d) return "";
   const date = new Date(d);
   return date.toDateString();
 };
 
 const UserProfilePage = () => {
+  const api = useApi();
   const { colors, isDarkMode, toggleDarkMode } = useTheme();
   const { signOut } = useClerk();
   const { user } = useUser();
   const { confirm } = usePuzzle();
+  const { userSettings, fetchUserSettings, changeUserSettingState } =
+    useAppUser();
 
   const [visible, setVisible] = useState<ToolTipProps>({
     darkMode: false,
     notifications: false,
     leaderboard: false,
-    exerciseGoal: {
-      goal: 5,
-      shown: false,
-    },
-    pointsGoal: {
-      goal: 500,
-      shown: false,
-    },
+    puzzleGoal: false,
+    pointsGoal: false,
   });
+
+  useEffect(() => {
+    if (userSettings) return;
+    fetchUserSettings();
+  }, []);
 
   const handleSignOut = async () => {
     const isOk = await confirm(
@@ -75,27 +75,74 @@ const UserProfilePage = () => {
     }
   };
 
-  const handleGoalInput = (num?: number, forPoints?: boolean) => {
+  const handleGoalInput = async (num?: number, forPoints?: boolean) => {
     if (forPoints) {
-      if (!num || num <= 0 || num % 1 !== 0 || !Number(num))
-        return setVisible((prev) => ({
-          ...prev,
-          pointsGoal: { ...prev.pointsGoal, goal: 50 },
-        }));
-      return setVisible((prev) => ({
-        ...prev,
-        pointsGoal: { ...prev.pointsGoal, goal: num },
-      }));
+      if (!num || num <= 0 || num % 1 !== 0 || !Number(num)) {
+        changeUserSettingState<"pointsGoal">("pointsGoal", 500);
+        await updatePointsGoal(500);
+        return;
+      }
+      changeUserSettingState<"pointsGoal">("pointsGoal", num);
+      await updatePointsGoal(num);
+      return;
     }
-    if (!num || num <= 0 || num % 1 !== 0 || !Number(num) || num > 100)
-      return setVisible((prev) => ({
-        ...prev,
-        exerciseGoal: { ...prev.exerciseGoal, goal: 5 },
-      }));
-    setVisible((prev) => ({
-      ...prev,
-      exerciseGoal: { ...prev.exerciseGoal, goal: num },
-    }));
+    if (!num || num <= 0 || num % 1 !== 0 || !Number(num) || num > 100) {
+      changeUserSettingState<"puzzleGoal">("puzzleGoal", 50);
+      await updatePuzzleGoal(50);
+      return;
+    }
+    changeUserSettingState<"puzzleGoal">("puzzleGoal", num);
+    updatePuzzleGoal(num);
+  };
+
+  const changeEnableNotifications = async () => {
+    try {
+      changeUserSettingState<"enableNotifications">("enableNotifications");
+      const response = await api.put<Response>("/users/enable-notifications");
+      if (!response.data.success) {
+        console.log(response.data.message);
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const changeEnableLeaderboard = async () => {
+    try {
+      changeUserSettingState<"enableLeaderboard">("enableLeaderboard");
+      const response = await api.put<Response>("/users/enable-leaderboard");
+      if (!response.data.success) {
+        console.log(response.data.message);
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const updatePuzzleGoal = async (newValue: number) => {
+    try {
+      const response = await api.put<Response>("/users/update-puzzle-goal", {
+        newValue,
+      });
+      if (!response.data.success) {
+        console.log(response.data.message);
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const updatePointsGoal = async (newValue: number) => {
+    try {
+      const response = await api.put<Response>("/users/update-points-goal", {
+        newValue,
+      });
+      if (!response.data.success) {
+        console.log(response.data.message);
+      }
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   return (
@@ -170,7 +217,7 @@ const UserProfilePage = () => {
             </View>
             <Switch
               value={isDarkMode}
-              onChange={toggleDarkMode}
+              onValueChange={toggleDarkMode}
               thumbColor={colors.text}
             />
           </View>
@@ -203,7 +250,11 @@ const UserProfilePage = () => {
                 Enable Notifications
               </Text>
             </View>
-            <Switch thumbColor={colors.text} />
+            <Switch
+              value={userSettings?.enableNotifications}
+              onValueChange={changeEnableNotifications}
+              thumbColor={colors.text}
+            />
           </View>
           <View className="flex flex-row items-center">
             <View className="flex flex-row items-center flex-1">
@@ -220,7 +271,7 @@ const UserProfilePage = () => {
                 className="overflow-hidden rounded-lg flex flex-row"
               >
                 <LinearGradient colors={colors.gradients.empty} className="p-2">
-                  <Ionicons name="podium" color={colors.text} size={32} />
+                  <Ionicons name="trophy" color={colors.text} size={32} />
                 </LinearGradient>
               </TouchableOpacity>
               <Text
@@ -230,7 +281,11 @@ const UserProfilePage = () => {
                 Enable Leaderboard
               </Text>
             </View>
-            <Switch thumbColor={colors.text} />
+            <Switch
+              value={userSettings?.enableLeaderboard}
+              onValueChange={changeEnableLeaderboard}
+              thumbColor={colors.text}
+            />
           </View>
         </View>
         <View
@@ -242,17 +297,14 @@ const UserProfilePage = () => {
         >
           <View className="flex flex-row items-center">
             <View className="flex flex-row items-center flex-1">
-              {visible.exerciseGoal.shown && (
-                <ToolTip text="Controls your daily exercise goal. Cannot be larger than 100." />
+              {visible.puzzleGoal && (
+                <ToolTip text="Controls your daily puzzle goal. Cannot be larger than 100." />
               )}
               <TouchableOpacity
                 onPress={() =>
                   setVisible((prev) => ({
                     ...prev,
-                    exerciseGoal: {
-                      ...prev.exerciseGoal,
-                      shown: !prev.exerciseGoal.shown,
-                    },
+                    puzzleGoal: !prev.puzzleGoal,
                   }))
                 }
                 className="overflow-hidden rounded-lg flex flex-row"
@@ -265,24 +317,24 @@ const UserProfilePage = () => {
                 className="text-2xl font-semibold ml-3"
                 style={{ color: colors.text }}
               >
-                Exercise Goal
+                Puzzle Goal
               </Text>
             </View>
             <View className="flex-row items-center">
               <TouchableOpacity
-                onPress={() => handleGoalInput(visible.exerciseGoal.goal - 1)}
+                onPress={() => handleGoalInput(userSettings?.puzzleGoal! - 1)}
               >
                 <Ionicons name="chevron-back" color={colors.text} size={32} />
               </TouchableOpacity>
               <TextInput
-                value={String(visible.exerciseGoal.goal)}
+                value={String(userSettings?.puzzleGoal)}
                 onChangeText={(text) => handleGoalInput(Number(text))}
                 keyboardType="numeric"
                 className="border-2 w-16 text-3xl text-center rounded-lg"
                 style={{ color: colors.text, borderColor: colors.border }}
               />
               <TouchableOpacity
-                onPress={() => handleGoalInput(visible.exerciseGoal.goal + 1)}
+                onPress={() => handleGoalInput(userSettings?.puzzleGoal! + 1)}
               >
                 <Ionicons
                   name="chevron-forward"
@@ -294,17 +346,14 @@ const UserProfilePage = () => {
           </View>
           <View className="flex flex-row items-center">
             <View className="flex flex-row items-center flex-1">
-              {visible.pointsGoal.shown && (
+              {visible.pointsGoal && (
                 <ToolTip text="Controls your daily points goal." />
               )}
               <TouchableOpacity
                 onPress={() =>
                   setVisible((prev) => ({
                     ...prev,
-                    pointsGoal: {
-                      ...prev.pointsGoal,
-                      shown: !prev.pointsGoal.shown,
-                    },
+                    pointsGoal: !prev.pointsGoal,
                   }))
                 }
                 className="overflow-hidden rounded-lg flex flex-row"
@@ -323,13 +372,13 @@ const UserProfilePage = () => {
             <View className="flex-row items-center">
               <TouchableOpacity
                 onPress={() =>
-                  handleGoalInput(visible.pointsGoal.goal - 1, true)
+                  handleGoalInput(userSettings?.pointsGoal! - 1, true)
                 }
               >
                 <Ionicons name="chevron-back" color={colors.text} size={32} />
               </TouchableOpacity>
               <TextInput
-                value={String(visible.pointsGoal.goal)}
+                value={String(userSettings?.pointsGoal!)}
                 onChangeText={(text) => handleGoalInput(Number(text), true)}
                 keyboardType="numeric"
                 className="border-2 w-16 text-3xl text-center rounded-lg"
@@ -337,7 +386,7 @@ const UserProfilePage = () => {
               />
               <TouchableOpacity
                 onPress={() =>
-                  handleGoalInput(visible.pointsGoal.goal + 1, true)
+                  handleGoalInput(userSettings?.pointsGoal! + 1, true)
                 }
               >
                 <Ionicons

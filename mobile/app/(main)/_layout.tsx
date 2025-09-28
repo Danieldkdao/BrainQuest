@@ -1,11 +1,15 @@
 import React from "react";
 import { Ionicons } from "@expo/vector-icons";
-import { Tabs } from "expo-router";
+import { Redirect, Tabs } from "expo-router";
 import { useTheme } from "@/hooks/useTheme";
 import { StatusBar } from "react-native";
+import { useAuth } from "@clerk/clerk-expo";
 
 const MainLayout = () => {
   const { colors } = useTheme();
+  const { isSignedIn } = useAuth();
+
+  if(!isSignedIn) return <Redirect href="/(auth)"/>
 
   return (
     <>

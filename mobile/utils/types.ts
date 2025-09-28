@@ -52,6 +52,62 @@ export type Session = {
   createdAt: string;
 };
 
+export type PuzzleCategoryData = {
+  value: number;
+  color: string;
+  text: string;
+  label: string;
+  focused: boolean;
+};
+
+export type DaysWeek = "Mon" | "Tue" | "Wed" | "Thu" | "Fri" | "Sat" | "Sun";
+
+export type BarChartData = {
+  value: number;
+  label: DaysWeek;
+};
+
+export type Weekly = {
+  from: number;
+  to: number;
+  data: [
+    BarChartData,
+    BarChartData,
+    BarChartData,
+    BarChartData,
+    BarChartData,
+    BarChartData,
+    BarChartData,
+  ];
+};
+
+export type User = {
+  userId: string;
+  name: string;
+  enableNotifications: boolean;
+  enableLeaderboard: boolean;
+  puzzleGoal: number;
+  pointsGoal: number;
+  puzzles: number;
+  points: number;
+  badgesEarned: string[];
+  level: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
+  streak: number;
+  todayPuzzles: number;
+  todayPoints: number;
+  lastLogged: number;
+  weekPuzzles: Weekly[];
+  weekPoints: Weekly[];
+  puzzleCategoryData: PuzzleCategoryData[];
+}
+
+export type LeaderboardUser = {
+  userId: string;
+  name: string;
+  points: number;
+  puzzles: number;
+}
+
 export type PuzzleCategory =
   | "logic"
   | "math"
@@ -73,4 +129,9 @@ export type Difficulty = {
   id: number;
   difficulty: PuzzleDifficulty;
   iconName: keyof typeof Ionicons.glyphMap;
+};
+
+export type Tab = {
+  id: number;
+  icon: keyof typeof Ionicons.glyphMap;
 };

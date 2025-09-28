@@ -18,6 +18,7 @@ import * as FileSystem from "expo-file-system";
 import { Response, type PuzzleCategory, type PuzzleDifficulty } from "@/utils/types";
 import { useUser } from "@clerk/clerk-expo";
 import useApi from "@/utils/api";
+import { categories, difficulties } from "@/utils/utils";
 
 type InputFieldsType = {
   puzzle: string;
@@ -32,7 +33,7 @@ const CreatePage = () => {
   const api = useApi();
   const { user } = useUser();
   const { colors } = useTheme();
-  const { changeSelectedComponent, categories, difficulties } = usePuzzle();
+  const { changeSelectedComponent } = usePuzzle();
 
   const [inputFields, setInputFields] = useState<InputFieldsType>({
     puzzle: "",

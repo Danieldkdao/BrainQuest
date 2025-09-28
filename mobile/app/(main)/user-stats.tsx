@@ -1,55 +1,26 @@
-import {
-  View,
-  ScrollView,
-  TouchableOpacity,
-} from "react-native";
-import React, { ReactNode, useState } from "react";
+import { View, ScrollView, TouchableOpacity } from "react-native";
+import React from "react";
 import { useTheme } from "@/hooks/useTheme";
 import { Ionicons } from "@expo/vector-icons";
+import { usePuzzle } from "@/hooks/usePuzzle";
 import StatsPage from "@/components/user-stats/stats";
 import BadgesPage from "@/components/user-stats/badges";
 import LeaderboardPage from "@/components/user-stats/leaderboard";
-import TrainingHistoryPage from "@/components/user-stats/training-history";
 import MyPuzzlesPage from "@/components/user-stats/my-puzzles";
+import TrainingHistoryPage from "@/components/user-stats/training-history";
+import { tabs } from "@/utils/utils";
 
-type TAB = {
-  id: number;
-  icon: keyof typeof Ionicons.glyphMap;
-  page: ReactNode;
-};
-
-const ChartsPage = () => {
-  const TABS: TAB[] = [
-    {
-      id: 1,
-      icon: "bar-chart",
-      page: <StatsPage />,
-    },
-    {
-      id: 2,
-      icon: "medal",
-      page: <BadgesPage />,
-    },
-    {
-      id: 3,
-      icon: "podium",
-      page: <LeaderboardPage />,
-    },
-    {
-      id: 4,
-      icon: "extension-puzzle",
-      page: <MyPuzzlesPage />,
-    },
-    {
-      id: 5,
-      icon: "barbell",
-      page: <TrainingHistoryPage />,
-    },
-  ];
-
+const UserStatsPage = () => {
   const { colors } = useTheme();
+  const { selectedTab, changeSelectedTab } = usePuzzle();
 
-  const [selectedTab, setSelectedTab] = useState<TAB>(TABS[0]);
+  const tabPages = [
+    <StatsPage />,
+    <BadgesPage />,
+    <LeaderboardPage />,
+    <MyPuzzlesPage />,
+    <TrainingHistoryPage />,
+  ]
 
   return (
     <View
@@ -61,11 +32,11 @@ const ChartsPage = () => {
         className="w-full"
       >
         <View className="flex-row items-center justify-between mb-8 w-[90%]">
-          {TABS.map((item) => {
-            const isSelected = selectedTab.id === item.id;
+          {tabs.map((item) => {
+            const isSelected = selectedTab === item.id;
             return (
               <TouchableOpacity
-                onPress={() => setSelectedTab(item)}
+                onPress={() => changeSelectedTab(item.id)}
                 key={item.id}
                 className="flex flex-row items-center gap-3 rounded-xl p-4"
                 style={{
@@ -81,10 +52,10 @@ const ChartsPage = () => {
             );
           })}
         </View>
-        {selectedTab.page}
+        {tabPages[selectedTab - 1]}
       </ScrollView>
     </View>
   );
 };
 
-export default ChartsPage;
+export default UserStatsPage;

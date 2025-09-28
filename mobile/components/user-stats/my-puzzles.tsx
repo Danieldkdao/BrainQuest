@@ -5,6 +5,10 @@ import { Puzzle, Response } from "@/utils/types";
 import PuzzleCard from "./puzzle-card";
 import useApi from "@/utils/api";
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
+import { usePuzzle } from "@/hooks/usePuzzle";
+import { useRouter } from "expo-router";
+import CreatePage from "../puzzling/create";
 
 type PagesType = {
   currentPage: number;
@@ -14,6 +18,8 @@ type PagesType = {
 const MyPuzzlesPage = () => {
   const api = useApi();
   const { colors } = useTheme();
+  const { changeSelectedComponent } = usePuzzle();
+  const router = useRouter();
 
   const [puzzles, setPuzzles] = useState<Puzzle[]>([]);
   const [pages, setPages] = useState<PagesType>({
@@ -26,6 +32,11 @@ const MyPuzzlesPage = () => {
     fetchUserPuzzles(0);
   }, []);
 
+  const redirectCreate = () => {
+    router.push("/(main)/puzzling");
+    changeSelectedComponent(<CreatePage />);
+  };
+
   const fetchUserPuzzles = async (page: number) => {
     setLoading(true);
     try {
@@ -33,7 +44,6 @@ const MyPuzzlesPage = () => {
         Response<"puzzles" | "pages", { puzzles: Puzzle[]; pages: number }>
       >(`/puzzles/get-user-puzzles?limit=${5}&page=${page}`);
       if (response.data.success && response.data.puzzles) {
-        console.log(response.data.puzzles);
         setPuzzles(response.data.puzzles);
         setPages((prev) => ({
           ...prev,
@@ -88,8 +98,38 @@ const MyPuzzlesPage = () => {
       {loading ? (
         <ActivityIndicator color={colors.text} size={50} className="mt-52" />
       ) : puzzles.length === 0 ? (
-        <View className="">
-          <Text>No Puzzles Added Yet</Text>
+        <View
+          className="border-2 p-5 rounded-xl items-center gap-2"
+          style={{
+            backgroundColor: colors.surface,
+            borderColor: colors.border,
+          }}
+        >
+          <Ionicons name="extension-puzzle" color={colors.text} size={70} />
+          <Text className="text-2xl font-bold" style={{ color: colors.text }}>
+            No Puzzles Added Yet
+          </Text>
+          <Text className="text-center" style={{ color: colors.textMuted }}>
+            Create your first puzzle to use in training and share with the
+            community!
+          </Text>
+          <TouchableOpacity
+            onPress={redirectCreate}
+            className="rounded-xl overflow-hidden"
+          >
+            <LinearGradient
+              className="flex-row items-center gap-2 py-2 px-4"
+              colors={colors.gradients.empty}
+            >
+              <Ionicons name="add-circle" color={colors.text} size={30} />
+              <Text
+                className="text-xl font-medium"
+                style={{ color: colors.text }}
+              >
+                Create Puzzle
+              </Text>
+            </LinearGradient>
+          </TouchableOpacity>
         </View>
       ) : (
         <View className="gap-4">

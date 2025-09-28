@@ -16,6 +16,7 @@ import { Comment, Puzzle, Response } from "@/utils/types";
 import { useUser } from "@clerk/clerk-expo";
 import { LinearGradient } from "expo-linear-gradient";
 import useApi from "@/utils/api";
+import { useAppUser } from "@/hooks/useAppUser";
 
 type PuzzleCardProps = {
   item: Puzzle;
@@ -30,6 +31,7 @@ const PuzzleCard = ({ item }: PuzzleCardProps) => {
   const api = useApi();
   const { colors } = useTheme();
   const { user } = useUser();
+  const { fetchUserSettings } = useAppUser();
 
   const [likes, setLikes] = useState(item.likes);
   const [dislikes, setDislikes] = useState(item.dislikes);
@@ -152,6 +154,8 @@ const PuzzleCard = ({ item }: PuzzleCardProps) => {
       >("/train/check-answer", {
         response: userRes,
         answer: item.answer,
+        difficulty: item.difficulty,
+        category: item.category,
         id: item._id,
       });
       if (response.data.success && response.data.correct !== undefined) {
@@ -164,6 +168,7 @@ const PuzzleCard = ({ item }: PuzzleCardProps) => {
       console.error(error);
     } finally {
       setLoading(false);
+      fetchUserSettings();
     }
   };
 

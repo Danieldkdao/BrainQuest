@@ -21,6 +21,8 @@ import {
 } from "@/utils/types";
 import PuzzleScreen from "./puzzle-screen";
 import useApi from "@/utils/api";
+import { difficulties, categories } from "@/utils/utils";
+import { useAppUser } from "@/hooks/useAppUser";
 
 type SettingsType = {
   difficulties: PuzzleDifficulty[];
@@ -43,10 +45,9 @@ const TrainPage = () => {
   const {
     changeSelectedComponent,
     confirm,
-    categories,
-    difficulties,
     fetchPuzzles,
   } = usePuzzle();
+  const { fetchUserSettings } = useAppUser();
 
   const [settings, setSettings] = useState<SettingsType>({
     difficulties: [],
@@ -99,6 +100,7 @@ const TrainPage = () => {
       const response = await api.post<Response>("/train/save-session", body);
       if (response.data.success) {
         if (leave) {
+          await fetchUserSettings();
           changeSelectedComponent(null);
         } else {
           reset();
@@ -497,7 +499,6 @@ const TrainPage = () => {
           )}
         </View>
       </ReactNativeModal>
-
       <ScrollView className="w-full" contentContainerClassName="pb-10">
         <View className="flex-row justify-center relative py-2">
           <TouchableOpacity
