@@ -6,20 +6,46 @@ import puzzleModel, {
   type PuzzleCategory,
   type PuzzleDifficulty,
 } from "../models/puzzle.model.ts";
-import userModel, { type PuzzleCategoryData } from "../models/user.model.ts";
+import userModel, {
+  type PuzzleCategoryData,
+  type LevelType,
+  type IUser,
+  createNewWeekPuzzles,
+  createNewWeekPoints,
+  createNewWeekTimeSpent,
+  calcDaysTillSun,
+  resetDay,
+} from "../models/user.model.ts";
+import badgeModel from "../models/badge.model.ts";
+import OpenAI from "openai";
+import { Levels } from "./user.controller.ts";
+import {
+  PointsReference,
+  BadgeReference,
+  ChallengeReference,
+} from "../utils/reference.ts";
+import challengeModel from "../models/challenge.model.ts";
 
-const PointsReference = {
-  easy: 1,
-  medium: 2,
-  hard: 3,
+type QueryForLevel = {
+  userId: string | null;
+  points: { $gte: number; $lt?: number };
+  "puzzles.correct": { $gte: number; $lt?: number };
+};
+
+export type CategoryArrayItemSave = {
+  category: PuzzleCategory;
+  isCorrect: boolean;
+  timeSpent: number;
 };
 
 type CheckAnswerBody = {
+  puzzle: string;
   response: string;
   answer: string;
   difficulty: PuzzleDifficulty;
   category: PuzzleCategory;
   id?: string;
+  timeTaken?: number;
 };
 
 type OpenRouterChatCompletion = {
@@ -56,6 +82,46 @@ type SaveTSBody = {
   puzzlesSolved: number;
   timeLimit: string;
   timeTaken: string;
+  timeTakenNumber: number;
+  allPuzzlesAnswered: CategoryArrayItemSave[];
+};
+
+export const addNewWeeks = async (
+  userId: string | null,
+  numDate: number,
+  correctPuzzles: number,
+  incorrectPuzzles: number,
+  pointsEarned: number,
+  timeSpent: number
+) => {
+  try {
+    await userModel.updateOne(
+      {
+        userId,
+      },
+      {
+        $push: {
+          weekPuzzles: {
+            from: numDate,
+            to: calcDaysTillSun(numDate),
+            data: createNewWeekPuzzles(correctPuzzles, incorrectPuzzles),
+          },
+          weekPoints: {
+            from: numDate,
+            to: calcDaysTillSun(numDate),
+            data: createNewWeekPoints(pointsEarned),
+          },
+          weekTimeSpent: {
+            from: numDate,
+            to: calcDaysTillSun(numDate),
+            data: createNewWeekTimeSpent(timeSpent),
+          },
+        },
+      }
+    );
+  } catch (error) {
+    console.error("Error adding new weeks: ", error);
+  }
 };
 
 const updatePercentageText = async (userId: string | null) => {
@@ -66,10 +132,10 @@ const updatePercentageText = async (userId: string | null) => {
       { userId },
       { puzzleCategoryData: 1, _id: 0 }
     );
-    if (!categoryDataObject)
-      return { success: false, message: "User doesn't exist!" };
+    if (!categoryDataObject) return;
     const categoryData = categoryDataObject.puzzleCategoryData;
-    const totalValue = categoryData.reduce((a, b) => a + b.value, 0);
+    const pendingTotalValue = categoryData.reduce((a, b) => a + b.value, 0);
+    const totalValue = pendingTotalValue <= 0 ? 1 : pendingTotalValue;
     const newData: PuzzleCategoryData[] = categoryData.map((item) => {
       return {
         value: item.value,
@@ -77,6 +143,8 @@ const updatePercentageText = async (userId: string | null) => {
         label: item.label,
         text: `${Math.round((item.value / totalValue) * 100)}%`,
         focused: item.label === "Logic",
+        correct: item.correct,
+        timeSpent: item.timeSpent,
       };
     });
     await userModel.updateOne(
@@ -84,18 +152,234 @@ const updatePercentageText = async (userId: string | null) => {
       { $set: { puzzleCategoryData: newData } }
     );
   } catch (error) {
-    console.error(error);
+    console.error("Update percentage text error: ", error);
   }
 };
 
+const checkEarnedBadges = async (userId: string | null) => {
+  try {
+    const badges = await badgeModel.find();
+    if (!badges || badges.length === 0) return;
+    badges.forEach(async (item) => {
+      await BadgeReference[item.condition as keyof typeof BadgeReference](
+        userId,
+        item._id as string
+      );
+    });
+  } catch (error) {
+    console.error("check earned badges error: ", error);
+  }
+};
 
+const checkStreak = async (userId: string | null) => {
+  try {
+    const user = await userModel.findOne({ userId }, { lastLogged: 1, _id: 0 });
+    if (!user) return;
+    const now = Date.now();
+    const lastLogged = user.lastLogged;
+    const date = new Date(lastLogged);
+
+    const nextMidnight = new Date(date);
+    nextMidnight.setHours(24, 0, 0, 0);
+
+    const endOfNextDay = new Date(nextMidnight);
+    endOfNextDay.setHours(24, 0, 0, 0);
+    await userModel.updateOne({ userId }, { $set: { lastLogged: Date.now() } });
+    if (nextMidnight.getTime() <= now && now <= endOfNextDay.getTime()) {
+      await userModel.updateOne(
+        {
+          userId,
+        },
+        { $inc: { streak: 1 } }
+      );
+    }
+    if (endOfNextDay.getTime() < now) {
+      await userModel.updateOne(
+        {
+          userId,
+        },
+        { $set: { streak: 1 } }
+      );
+    }
+  } catch (error) {
+    console.error("check streak error: ", error);
+  }
+};
+
+const updateLevel = async (
+  userId: string | null,
+  level: LevelType,
+  nextPoints: number | undefined,
+  nextPuzzles: number | undefined
+) => {
+  try {
+    let query: QueryForLevel = {
+      userId,
+      points: { $gte: level.pointsNeeded, $lt: nextPoints },
+      "puzzles.correct": { $gte: level.puzzlesNeeded, $lt: nextPuzzles },
+    };
+    if (!nextPoints || !nextPuzzles) {
+      query = {
+        userId,
+        points: { $gte: level.pointsNeeded },
+        "puzzles.correct": { $gte: level.puzzlesNeeded },
+      };
+    }
+    await userModel.updateOne(query, { level });
+  } catch (error) {
+    console.error("update level error: ", error);
+  }
+};
+
+const checkUpdateLevel = async (userId: string | null) => {
+  Levels.forEach(async (item, index) => {
+    const validPoints = Levels[index + 1]
+      ? Levels[index + 1].pointsNeeded
+      : undefined;
+    const validPuzzles = Levels[index + 1]
+      ? Levels[index + 1].puzzlesNeeded
+      : undefined;
+    await updateLevel(userId, item, validPoints, validPuzzles);
+  });
+};
+
+const checkChallengeProgress = async (userId: string | null) => {
+  try {
+    const challenges = await challengeModel.find({ isDaily: true });
+    if (!challenges || challenges.length === 0) return;
+    challenges.forEach(async (item) => {
+      await ChallengeReference[
+        item.condition as keyof typeof ChallengeReference
+      ](userId);
+    });
+  } catch (error) {
+    console.error("check challenges progress error: ", error);
+  }
+};
+
+const updateUser = async (
+  userId: string | null,
+  correctPuzzles: number,
+  incorrectPuzzles: number,
+  pointsEarned: number,
+  timeSpent: number,
+  categories: CategoryArrayItemSave[]
+) => {
+  const numDate = Date.now();
+  const date = new Date(numDate);
+  const day = date.toLocaleDateString("en-US", { weekday: "short" });
+  try {
+    const user: Pick<IUser, "weekPuzzles" | "_id" | "lastLogged"> | null =
+      await userModel
+        .findOneAndUpdate(
+          {
+            userId,
+          },
+          {
+            $inc: {
+              "puzzles.correct": correctPuzzles,
+              "puzzles.incorrect": incorrectPuzzles,
+              points: pointsEarned,
+              timeSpent,
+              "todayStats.puzzles.correct": correctPuzzles,
+              "todayStats.puzzles.incorrect": incorrectPuzzles,
+              "todayStats.points": pointsEarned,
+              "todayStats.timeSpent": timeSpent,
+              "weekPuzzles.$[week].data.$[day].value": correctPuzzles,
+              "weekPuzzles.$[week].data.$[incorrect].value": incorrectPuzzles,
+              "weekPoints.$[week].data.$[day].value": pointsEarned,
+              "weekTimeSpent.$[week].data.$[day].value": timeSpent,
+            },
+          },
+          {
+            arrayFilters: [
+              { "week.from": { $lte: numDate }, "week.to": { $gte: numDate } },
+              { "day.label": day },
+              { "incorrect.day": day },
+            ],
+            new: true,
+          }
+        )
+        .select("weekPuzzles lastLogged");
+    if (!user) return;
+    const weeks = user.weekPuzzles;
+    weeks.sort((a, b) => b.to - a.to);
+    if (weeks[0].to < numDate) {
+      await addNewWeeks(
+        userId,
+        numDate,
+        correctPuzzles,
+        incorrectPuzzles,
+        pointsEarned,
+        timeSpent
+      );
+    }
+    const nextDay = new Date(user.lastLogged);
+    nextDay.setHours(23, 59, 59, 999);
+    if (nextDay.getTime() < numDate) {
+      await userModel.findOneAndUpdate(
+        { userId },
+        {
+          $set: {
+            todayStats: resetDay(
+              correctPuzzles,
+              incorrectPuzzles,
+              pointsEarned,
+              timeSpent,
+              categories
+            ),
+          },
+        }
+      );
+    }
+    const operations = categories.map((item) => {
+      const update = item.isCorrect
+        ? {
+            $inc: {
+              [`todayStats.categories.${item.category}.correct`]: 1,
+              "puzzleCategoryData.$.value": 1,
+              "puzzleCategoryData.$.correct": 1,
+              "puzzleCategoryData.$.timeSpent": item.timeSpent,
+            },
+          }
+        : {
+            $inc: {
+              [`todayStats.categories.${item.category}.incorrect`]: 1,
+              "puzzleCategoryData.$.value": 1,
+              "puzzleCategoryData.$.timeSpent": item.timeSpent,
+            },
+          };
+      return {
+        updateOne: {
+          filter: {
+            userId,
+            "puzzleCategoryData.label":
+              item.category.charAt(0).toUpperCase() + item.category.slice(1),
+          },
+          update,
+        },
+      };
+    });
+    await userModel.bulkWrite(operations);
+    await Promise.all([
+      updatePercentageText(userId),
+      checkEarnedBadges(userId),
+      checkStreak(userId),
+      checkUpdateLevel(userId),
+      checkChallengeProgress(userId),
+    ]);
+  } catch (error) {
+    console.error("update user error: ", error);
+  }
+};
 
 export const checkAnswer = async (
   req: Request<{}, {}, CheckAnswerBody>,
   res: Response
 ) => {
   const { userId } = getAuth(req);
-  const { response, answer, difficulty, category, id } = req.body;
+  const { puzzle, response, answer, difficulty, category, id, timeTaken } =
+    req.body;
   try {
     if (id && userId) {
       const puzzle = await puzzleModel.findById(id);
@@ -109,16 +393,18 @@ export const checkAnswer = async (
     const checkResponse = await axios.post<OpenRouterChatCompletion>(
       "https://openrouter.ai/api/v1/chat/completions",
       {
-        model: "x-ai/grok-4-fast:free",
+        model: "openai/gpt-oss-20b:free",
         messages: [
           {
             role: "system",
             content:
-              "You leniently compare the meaning of a response and an answer and only returns the strings true or false.",
+              "You leniently compare the meaning of a response to a puzzle and it's answer and only return the strings true or false.",
           },
           {
             role: "user",
-            content: `Compare this response: (${response}) to this answer: (${answer}) and check if the response is has similar meaning to the answer. One might be longer than the other or contain extra details but your job is to check if the main idea semantically is the same. Return true or false.`,
+            content: `Compare this response: (${response}) to this puzzle: (${[
+              puzzle,
+            ]}) and it's answer: (${answer}) and check if the user response is acceptable as a correct answer to the puzzle. Return true or false.`,
           },
         ],
       },
@@ -129,22 +415,38 @@ export const checkAnswer = async (
         },
       }
     );
+    // const openai = new OpenAI({
+    //   apiKey: process.env.GEMINI_API_KEY!,
+    //   baseURL: "https://generativelanguage.googleapis.com/v1beta/openai/",
+    // });
+
+    // const checkResponse = await openai.chat.completions.create({
+    //   model: "gemini-2.0-flash",
+    //   messages: [
+    //     {
+    //       role: "system",
+    //       content:
+    //         "You leniently compare a response to a puzzle and it's answer and only return the strings true or false.",
+    //     },
+    //     {
+    //       role: "user",
+    //       content: `Compare this response: (${response}) to this puzzle: (${puzzle}) and it's answer: (${answer}) and check to see if the user response is acceptable as a correct answer to the puzzle. Return true or false.`,
+    //     },
+    //   ],
+    // });
     if (id) {
       await puzzleModel.findByIdAndUpdate(id, { $push: { attempts: userId } });
     }
-    const numDate = Date.now();
-    const date = new Date(numDate);
-    const day = date.toLocaleDateString("en-US", { weekday: "short" });
     const isCorrect = checkResponse.data.choices[0].message.content;
     let send;
     let pointsEarned = 0;
-    if (isCorrect === "true") {
+    if (isCorrect?.trim() === "true" || isCorrect?.includes("true")) {
       if (id) {
         await puzzleModel.findByIdAndUpdate(id, {
           $push: { successes: userId },
         });
+        pointsEarned = PointsReference[difficulty] * 15;
       }
-      pointsEarned = PointsReference[difficulty] * 15;
       send = {
         success: true,
         message: `Correct! The answer is ${answer}`,
@@ -157,76 +459,23 @@ export const checkAnswer = async (
         correct: false,
       };
     }
-    const result = await userModel.updateOne(
-      {
+    if (id && Number.isFinite(timeTaken) && typeof timeTaken !== "undefined") {
+      const correctPuzzles = pointsEarned > 0 ? 1 : 0;
+      const incorrectPuzzles = pointsEarned === 0 ? 1 : 0;
+      await updateUser(
         userId,
-      },
-      {
-        $inc: {
-          puzzles: 1,
-          todayPuzzles: 1,
-          points: pointsEarned,
-          todayPoints: pointsEarned,
-          "weekPuzzles.$[week].data.$[day].value": 1,
-          "weekPoints.$[week].data.$[day].value": pointsEarned,
-        },
-      },
-      {
-        arrayFilters: [
-          { "week.from": { $lte: numDate }, "week.to": { $gte: numDate } },
-          { "day.label": day },
-        ],
-      }
-    );
-    if (result.modifiedCount === 0) {
-      await userModel.updateOne(
-        {
-          userId,
-        },
-        {
-          $push: {
-            weekPuzzles: {
-              from: numDate,
-              to: numDate * 7 * 24 * 60 * 60 * 1000,
-              data: [
-                { label: "Mon", value: day === "Mon" ? 1 : 0 },
-                { label: "Tue", value: day === "Tue" ? 1 : 0 },
-                { label: "Wed", value: day === "Wed" ? 1 : 0 },
-                { label: "Thu", value: day === "Thu" ? 1 : 0 },
-                { label: "Fri", value: day === "Fri" ? 1 : 0 },
-                { label: "Sat", value: day === "Sat" ? 1 : 0 },
-                { label: "Sun", value: day === "Sun" ? 1 : 0 },
-              ],
-            },
-            weekPoints: {
-              from: numDate,
-              to: numDate * 7 * 24 * 60 * 60 * 1000,
-              data: [
-                { label: "Mon", value: day === "Mon" ? pointsEarned : 0 },
-                { label: "Tue", value: day === "Tue" ? pointsEarned : 0 },
-                { label: "Wed", value: day === "Wed" ? pointsEarned : 0 },
-                { label: "Thu", value: day === "Thu" ? pointsEarned : 0 },
-                { label: "Fri", value: day === "Fri" ? pointsEarned : 0 },
-                { label: "Sat", value: day === "Sat" ? pointsEarned : 0 },
-                { label: "Sun", value: day === "Sun" ? pointsEarned : 0 },
-              ],
-            },
+        correctPuzzles,
+        incorrectPuzzles,
+        pointsEarned,
+        timeTaken,
+        [
+          {
+            category,
+            isCorrect: pointsEarned > 0,
+            timeSpent: timeTaken,
           },
-        }
+        ]
       );
-    }
-    await userModel.updateOne(
-      {
-        userId,
-        "puzzleCategoryData.label":
-          category.charAt(0).toUpperCase() + category.slice(1),
-      },
-      {
-        $inc: { "puzzleCategoryData.$.value": 1 },
-      }
-    );
-    if (id) {
-      await updatePercentageText(userId);
     }
     res.json(send);
   } catch (error) {
@@ -251,6 +500,8 @@ export const saveTrainingSession = async (
       puzzlesSolved,
       timeLimit,
       timeTaken,
+      timeTakenNumber,
+      allPuzzlesAnswered,
     } = req.body;
     const newSession = new trainingSessionModel({
       user: userId,
@@ -260,8 +511,17 @@ export const saveTrainingSession = async (
       timeLimit,
       timeTaken,
     });
-    await newSession.save();
-    await updatePercentageText(userId);
+    await Promise.all([
+      newSession.save(),
+      updateUser(
+        userId,
+        puzzlesSolved,
+        puzzlesAttempted - puzzlesSolved,
+        pointsEarned,
+        timeTakenNumber,
+        allPuzzlesAnswered
+      ),
+    ]);
     res.json({
       success: true,
       message: "Training session saved successfully!",

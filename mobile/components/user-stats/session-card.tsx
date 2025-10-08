@@ -6,11 +6,12 @@ import useApi from "@/utils/api";
 import * as Progress from "react-native-progress";
 import { Ionicons } from "@expo/vector-icons";
 import { usePuzzle } from "@/hooks/usePuzzle";
+import { toast } from "@/utils/utils";
 
 type SessionCardProps = {
   item: Session;
   fetchSessions: () => Promise<void>;
-}
+};
 
 const SessionCard = ({ item, fetchSessions }: SessionCardProps) => {
   const api = useApi();
@@ -18,9 +19,11 @@ const SessionCard = ({ item, fetchSessions }: SessionCardProps) => {
   const { colors } = useTheme();
 
   const width = Dimensions.get("screen").width;
+  const ratio =
+    item.puzzlesAttempted > 0 ? item.puzzlesSolved / item.puzzlesAttempted : 0;
 
   const convertDate = (d: string) => {
-    if(!d) return;
+    if (!d) return;
     const newDate = new Date(d);
     const time = newDate.toLocaleTimeString("en-US", {
       hour: "numeric",
@@ -29,20 +32,36 @@ const SessionCard = ({ item, fetchSessions }: SessionCardProps) => {
     });
     const date = newDate.toDateString();
     return `Completed at ${time} on ${date}`;
-  }
+  };
 
   const deleteSession = async () => {
-    const isOk = await confirm("Confirm Delete Action", "Are you sure you want to delete this session?");
-    if(!isOk) return;
+    const isOk = await confirm(
+      "Confirm Delete Action",
+      "Are you sure you want to delete this session?"
+    );
+    if (!isOk) return;
     try {
-      const response = await api.delete<Response>(`/train/delete-session/${item._id}`);
-      if(response.data.success){
+      const response = await api.delete<Response>(
+        `/train/delete-session/${item._id}`
+      );
+      if (response.data.success) {
         fetchSessions();
+        return;
       }
+      toast(
+        "error",
+        "Deletion error",
+        "Error deleting session. Please come back later."
+      );
     } catch (error) {
       console.error(error);
+      toast(
+        "error",
+        "Deletion error",
+        "Error deleting session. Please come back later."
+      );
     }
-  }
+  };
 
   return (
     <View
@@ -52,7 +71,7 @@ const SessionCard = ({ item, fetchSessions }: SessionCardProps) => {
       <View className="flex-row gap-4">
         <View className="relative">
           <Progress.Circle
-            progress={item.puzzlesSolved / item.puzzlesAttempted}
+            progress={ratio}
             thickness={15}
             size={width / 3}
             borderWidth={0}
@@ -61,7 +80,7 @@ const SessionCard = ({ item, fetchSessions }: SessionCardProps) => {
           />
           <View className="items-center justify-center absolute inset-0">
             <Text className="text-2xl font-bold" style={{ color: colors.text }}>
-              {Math.round((item.puzzlesSolved / item.puzzlesAttempted) * 100)}%
+              {Math.round(ratio * 100)}%
             </Text>
             <Text
               className="text text-sm text-center"
@@ -82,21 +101,25 @@ const SessionCard = ({ item, fetchSessions }: SessionCardProps) => {
           <View className="flex-row items-center gap-2">
             <Ionicons name="hourglass" color={colors.text} size={30} />
             <Text className="text-xl" style={{ color: colors.text }}>
-              Time Limit: <Text className="font-extrabold">{item.timeLimit}</Text>
+              Time Limit:{" "}
+              <Text className="font-extrabold">{item.timeLimit}</Text>
             </Text>
           </View>
           <View className="flex-row items-center gap-2">
             <Ionicons name="time" color={colors.text} size={30} />
             <Text className="text-xl" style={{ color: colors.text }}>
-              Time Taken: <Text className="font-extrabold">{item.timeTaken}</Text>
+              Time Taken:{" "}
+              <Text className="font-extrabold">{item.timeTaken}</Text>
             </Text>
           </View>
         </View>
       </View>
       <View className="flex-row items-end justify-between">
-        <Text className="text-sm" style={{color: colors.textMuted}}>{convertDate(item.createdAt)}</Text>
+        <Text className="text-sm" style={{ color: colors.textMuted }}>
+          {convertDate(item.createdAt)}
+        </Text>
         <TouchableOpacity onPress={deleteSession}>
-          <Ionicons name="trash" size={30} color={colors.text}/>
+          <Ionicons name="trash" size={30} color={colors.text} />
         </TouchableOpacity>
       </View>
     </View>

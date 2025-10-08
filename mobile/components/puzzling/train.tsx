@@ -16,13 +16,16 @@ import { LinearGradient } from "expo-linear-gradient";
 import {
   type PuzzleDifficulty,
   type PuzzleCategory,
-  Puzzle,
-  Response,
+  type Puzzle,
+  type Response,
+  type CategoryArrayItemSave,
 } from "@/utils/types";
 import PuzzleScreen from "./puzzle-screen";
 import useApi from "@/utils/api";
 import { difficulties, categories } from "@/utils/utils";
 import { useAppUser } from "@/hooks/useAppUser";
+import Toast from "react-native-toast-message";
+import ToastProvider from "../ToastProvider";
 
 type SettingsType = {
   difficulties: PuzzleDifficulty[];
@@ -42,11 +45,7 @@ export type TrainingStatsType = {
 const TrainPage = () => {
   const api = useApi();
   const { colors } = useTheme();
-  const {
-    changeSelectedComponent,
-    confirm,
-    fetchPuzzles,
-  } = usePuzzle();
+  const { changeSelectedComponent, confirm, fetchPuzzles } = usePuzzle();
   const { fetchUserSettings } = useAppUser();
 
   const [settings, setSettings] = useState<SettingsType>({
@@ -67,24 +66,34 @@ const TrainPage = () => {
   const [loading, setLoading] = useState(false);
   const [currentPuzzle, setCurrentPuzzle] = useState(0);
   const [pause, setPause] = useState(false);
+  const [timeOnCurrentPuzzle, setTimeOnCurrentPuzzle] = useState(0);
+  const [timeTakenNoLimit, setTimeTakenNoLimit] = useState(0);
+  const [allPuzzlesAnswered, setAllPuzzlesAnswered] = useState<
+    CategoryArrayItemSave[]
+  >([]);
   const [end, setEnd] = useState(false);
 
   useEffect(() => {
-    if (typeof settings.timeLimit === "string") return;
     const timer = setTimeout(() => {
       if (pause) return;
       if (settings.timeLimit === 0) {
         finish();
         return;
       }
-      setSettings((prev) => ({
-        ...prev,
-        timeLimit: Number(prev.timeLimit) - 1,
-      }));
+      if (typeof settings.timeLimit === "string") {
+        if(!startSession) return;
+        setTimeTakenNoLimit((prev) => prev + 1);
+      } else {
+        setSettings((prev) => ({
+          ...prev,
+          timeLimit: Number(prev.timeLimit) - 1,
+        }));
+      }
+      setTimeOnCurrentPuzzle((prev) => prev + 1);
     }, 1000);
 
-    return () => clearInterval(timer);
-  }, [startSession, pause, settings.timeLimit]);
+    return () => clearTimeout(timer);
+  }, [startSession, pause, settings.timeLimit, timeOnCurrentPuzzle]);
 
   const saveSession = async (leave: boolean) => {
     setLoading(true);
@@ -96,6 +105,8 @@ const TrainPage = () => {
         puzzlesSolved: trainingStats.puzzlesSolved,
         timeLimit: times.timeLimit,
         timeTaken: times.timeTaken,
+        timeTakenNumber: times.timeTakenNumber,
+        allPuzzlesAnswered,
       };
       const response = await api.post<Response>("/train/save-session", body);
       if (response.data.success) {
@@ -105,9 +116,20 @@ const TrainPage = () => {
         } else {
           reset();
         }
+        return;
       }
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: response.data.message
+      });
     } catch (error) {
       console.error(error);
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: "Error saving session. Please try again later.",
+      });
     } finally {
       setLoading(false);
     }
@@ -128,16 +150,33 @@ const TrainPage = () => {
     const noLimit = settings.timePerQuestion.trim() === "";
     if (!noLimit && !Number(settings.timePerQuestion)) {
       setLoading(false);
-      console.log("invalid time");
+      Toast.show({
+        type: "error",
+        text1: "Invalid time",
+        text2: "Please enter a valid time in seconds."
+      });
       return;
     }
-    const response = await fetchPuzzles(
-      settings.categories,
-      settings.difficulties
-    );
+    if (!noLimit && Number(settings.timePerQuestion) <= 5){
+      setLoading(false);
+      Toast.show({
+        type: "error",
+        text1: "Invalid time",
+        text2: "Time must be greater than 5 seconds."
+      });
+      return;
+    }
+      const response = await fetchPuzzles(
+        settings.categories,
+        settings.difficulties
+      );
     if (!response || response.length === 0) {
       setLoading(false);
-      console.log("no response");
+      Toast.show({
+        type: "error",
+        text1: "No Puzzles Found",
+        text2: "No puzzles were found that meet the criteria. Please try something else.",
+      });
       return;
     }
     const timeLimit = noLimit
@@ -151,6 +190,9 @@ const TrainPage = () => {
   };
 
   const reset = () => {
+    setAllPuzzlesAnswered([]);
+    setTimeOnCurrentPuzzle(0);
+    setTimeTakenNoLimit(0);
     setSettings({
       difficulties: [],
       categories: [],
@@ -176,19 +218,28 @@ const TrainPage = () => {
 
   const calcTimeTaken = () => {
     if (settings.timeLimit === "None")
-      return { timeLimit: "None", timeTaken: "None Specified" };
+      return {
+        timeLimit: "None",
+        timeTaken: "None Specified",
+        timeTakenNumber: timeTakenNoLimit,
+      };
     const timeTaken =
       Number(settings.timePerQuestion) * puzzles.length -
       Number(settings.timeLimit);
     const timeLimit = Number(settings.timePerQuestion) * puzzles.length;
     const timeTakenString = `${String(Math.floor(timeTaken / 60)).padStart(2, "0")}:${String(timeTaken % 60).padStart(2, "0")}`;
     const timeLimitString = `${String(Math.floor(timeLimit / 60)).padStart(2, "0")}:${String(timeLimit % 60).padStart(2, "0")}`;
-    return { timeTaken: timeTakenString, timeLimit: timeLimitString };
+    return {
+      timeTaken: timeTakenString,
+      timeLimit: timeLimitString,
+      timeTakenNumber: timeTaken,
+    };
   };
 
   return (
     <View className="w-full h-full items-center">
       <ReactNativeModal isVisible={!startSession} animationOut="slideOutUp">
+        <ToastProvider />
         <View className="items-center justify-center h-full w-full">
           {end ? (
             <View
@@ -450,7 +501,7 @@ const TrainPage = () => {
                     className="text-xl font-medium"
                     style={{ color: colors.text }}
                   >
-                    Time Limit Per Question
+                    Time Limit Per Puzzle
                   </Text>
                   <Text style={{ color: colors.textMuted }}>
                     Enter in seconds. If you don't want one, leave it blank.
@@ -538,10 +589,13 @@ const TrainPage = () => {
           <PuzzleScreen
             puzzles={puzzles}
             currentPuzzle={currentPuzzle}
+            timeOnCurrentPuzzle={timeOnCurrentPuzzle}
             pause={pause}
             setCurrentPuzzle={setCurrentPuzzle}
             setPause={setPause}
             setTrainingStats={setTrainingStats}
+            setTimeOnCurrentPuzzle={setTimeOnCurrentPuzzle}
+            setAllPuzzlesAnswered={setAllPuzzlesAnswered}
             finish={finish}
           />
         ) : (

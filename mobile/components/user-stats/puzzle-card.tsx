@@ -6,6 +6,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { convertDate } from "@/app/(main)/user-profile";
 import { usePuzzle } from "@/hooks/usePuzzle";
 import useApi from "@/utils/api";
+import { toast } from "@/utils/utils";
 
 type PuzzleCardProps = {
   item: Puzzle;
@@ -24,7 +25,7 @@ const PuzzleCard = ({ item, fetchUserPuzzles, pages }: PuzzleCardProps) => {
   const [isDeleting, setIsDeleting] = useState(false);
 
   const deletePuzzle = async () => {
-    if(isDeleting) return;
+    if (isDeleting) return;
     const isOk = await confirm(
       "Confirm Delete",
       "Are you sure you want to delete this puzzle?"
@@ -36,11 +37,21 @@ const PuzzleCard = ({ item, fetchUserPuzzles, pages }: PuzzleCardProps) => {
         `/puzzles/delete-puzzle/${item._id}`
       );
       if (response.data.success) {
-        console.log(response.data.message);
         fetchUserPuzzles(pages.currentPage);
+        return;
       }
+      toast(
+        "error",
+        "Deletion error",
+        "Error deleting puzzle. Please try again later."
+      );
     } catch (error) {
       console.error(error);
+      toast(
+        "error",
+        "Deletion error",
+        "Error deleting puzzle. Please try again later."
+      );
     } finally {
       setIsDeleting(false);
     }

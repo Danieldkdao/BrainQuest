@@ -52,22 +52,83 @@ export type Session = {
   createdAt: string;
 };
 
+export type LevelType = {
+  level: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
+  title: string;
+  pointsNeeded: number;
+  puzzlesNeeded: number;
+  icon: keyof typeof Ionicons.glyphMap;
+  color: string;
+};
+
 export type PuzzleCategoryData = {
   value: number;
   color: string;
   text: string;
   label: string;
   focused: boolean;
+  correct: number;
+  timeSpent: number;
+};
+
+export type CategoryArrayItemSave = {
+  category: PuzzleCategory;
+  isCorrect: boolean;
+  timeSpent: number;
+};
+
+export type TodayStats = {
+  puzzles: {
+    correct: number;
+    incorrect: number;
+  };
+  points: number;
+  timeSpent: number;
+  categories: {
+    logic: number;
+    math: number;
+    wordplay: number;
+    lateral: number;
+    patterns: number;
+    classic: number;
+    trivia: number;
+  };
 };
 
 export type DaysWeek = "Mon" | "Tue" | "Wed" | "Thu" | "Fri" | "Sat" | "Sun";
 
 export type BarChartData = {
   value: number;
-  label: DaysWeek;
+  frontColor: string;
+  gradientColor: string;
+  label?: DaysWeek;
+  spacing?: number;
+  labelWidth?: number;
+  day?: DaysWeek;
 };
 
 export type Weekly = {
+  from: number;
+  to: number;
+  data: [
+    BarChartData,
+    BarChartData,
+    BarChartData,
+    BarChartData,
+    BarChartData,
+    BarChartData,
+    BarChartData,
+    BarChartData,
+    BarChartData,
+    BarChartData,
+    BarChartData,
+    BarChartData,
+    BarChartData,
+    BarChartData,
+  ];
+};
+
+export type Weekly2 = {
   from: number;
   to: number;
   data: [
@@ -88,24 +149,56 @@ export type User = {
   enableLeaderboard: boolean;
   puzzleGoal: number;
   pointsGoal: number;
-  puzzles: number;
+  puzzles: {
+    correct: number,
+    incorrect: number,
+  };
   points: number;
+  timeSpent: number;
   badgesEarned: string[];
-  level: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
+  level: LevelType;
   streak: number;
-  todayPuzzles: number;
-  todayPoints: number;
+  todayStats: TodayStats;
   lastLogged: number;
   weekPuzzles: Weekly[];
-  weekPoints: Weekly[];
+  weekPoints: Weekly2[];
+  weekTimeSpent: Weekly2[];
   puzzleCategoryData: PuzzleCategoryData[];
-}
+};
+
+export type Badge = {
+  _id: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  title: string;
+  description: string;
+  condition: string;
+};
 
 export type LeaderboardUser = {
   userId: string;
   name: string;
   points: number;
-  puzzles: number;
+  puzzles: {
+    correct: number;
+    incorrect: number;
+  };
+}
+
+export type UserProgress = {
+  user: string;
+  progress: number;
+  isCompleted: boolean;
+};
+
+export type Challenge = {
+  _id: string;
+  title: string;
+  task: string;
+  reward: number;
+  final: number;
+  isDaily: boolean;
+  condition: string;
+  usersComplete: UserProgress[];
 }
 
 export type PuzzleCategory =

@@ -7,6 +7,7 @@ import CreatePage from "@/components/puzzling/create";
 import ChallengePage from "@/components/puzzling/challenge";
 import DiscoverPage from "@/components/puzzling/discover";
 import { usePuzzle } from "@/hooks/usePuzzle";
+import Toast from "react-native-toast-message";
 
 type ButtonType = {
   id: number;
@@ -57,9 +58,7 @@ const MyPuzzlesPage = () => {
         backgroundColor: colors.bg,
       }}
     >
-      <View
-        className="h-full items-center justify-center gap-3 w-[90%]"
-      >
+      <View className="h-full items-center justify-center gap-3 w-[90%]">
         {selectedComponent
           ? selectedComponent
           : buttonGroups.map((item, index) => {

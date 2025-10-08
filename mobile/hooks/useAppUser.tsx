@@ -1,5 +1,8 @@
 import useApi from "@/utils/api";
-import { LeaderboardUser, Response, User } from "@/utils/types";
+import { type LeaderboardUser, type Response, type User } from "@/utils/types";
+import { toast } from "@/utils/utils";
+import { useAuth } from "@clerk/clerk-expo";
+import { useRouter } from "expo-router";
 import { createContext, useState, type ReactNode, useContext } from "react";
 
 type AppUserContextType = {
@@ -21,9 +24,13 @@ export const AppUserContextProvider = ({
   children: ReactNode;
 }) => {
   const api = useApi();
+  const { signOut } = useAuth();
+  const router = useRouter();
 
   const [userSettings, setUserSettings] = useState<User | null>(null);
-  const [leaderboardUsers, setLeaderboardUsers] = useState<LeaderboardUser[]>([]);
+  const [leaderboardUsers, setLeaderboardUsers] = useState<LeaderboardUser[]>(
+    []
+  );
 
   const fetchUserSettings = async () => {
     try {
@@ -32,12 +39,23 @@ export const AppUserContextProvider = ({
       );
       if (response.data.success && response.data.user) {
         setUserSettings(response.data.user);
+        await fetchLeaderboardUsers();
       } else {
-        console.log(response.data.message);
+        await signOut();
+        router.push("/(auth)");
+        toast(
+          "error",
+          "Fetch error",
+          "Error fetching user information. Please come back later."
+        );
       }
-      await fetchLeaderboardUsers();
     } catch (error) {
       console.error(error);
+      toast(
+        "error",
+        "Fetch error",
+        "Error fetching user information. Please come back later."
+      );
     }
   };
 

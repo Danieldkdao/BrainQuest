@@ -1,5 +1,6 @@
 import { type Response, type Request } from "express";
 import puzzleModel, {
+  type IPuzzle,
   type PuzzleCategory,
   type PuzzleDifficulty,
 } from "../models/puzzle.model.ts";
@@ -154,6 +155,83 @@ export const getPopularPuzzles = async (req: Request, res: Response) => {
     res
       .status(500)
       .json({ success: false, message: "Error fetching popular puzzles." });
+  }
+};
+
+export const getDiscoverCategoryPuzzles = async (
+  req: Request<{}, {}, {}, { category: string }>,
+  res: Response
+) => {
+  try {
+    const { userId } = getAuth(req);
+    const category = req.query.category;
+    const puzzles = await puzzleModel.aggregate([
+      {
+        $match: {
+          category,
+          "creator.id": { $ne: userId },
+        },
+      },
+      {
+        $sample: { size: 3 },
+      },
+    ]);
+    res.json({
+      success: true,
+      message: "Category puzzles for discover page fetched successfully!",
+      puzzles,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to retrieve category puzzles on discover page.",
+    });
+  }
+};
+
+export const getScrollPuzzles = async (
+  req: Request<
+    {},
+    {},
+    {
+      categories: PuzzleCategory[];
+      difficulties: PuzzleDifficulty[];
+      search: string;
+      limit: number;
+      skip: number;
+    }
+  >,
+  res: Response
+) => {
+  try {
+    const { userId } = getAuth(req);
+    const { search, categories, difficulties, skip = 0, limit = 4 } = req.body;
+    let query: any = { "creator.id": { $ne: userId } };
+    if (categories && categories.length !== 0) {
+      query = { ...query, category: { $in: categories } };
+    }
+    if (difficulties && difficulties.length !== 0) {
+      query = { ...query, difficulty: { $in: difficulties } };
+    }
+    if (search && search.trim() !== "") {
+      query = { ...query, question: { $regex: search, $options: "i" } };
+    }
+    const puzzles = await puzzleModel
+      .find(query)
+      .skip(skip)
+      .limit(limit)
+      .sort({ createdAt: -1, _id: -1 });
+    res.json({
+      success: true,
+      message: "Scroll puzzles fetched successfully!",
+      puzzles,
+    });
+  } catch (error) {
+    console.error(error);
+    res
+      .status(500)
+      .json({ success: false, message: "Failed to retrieve scroll puzzles." });
   }
 };
 

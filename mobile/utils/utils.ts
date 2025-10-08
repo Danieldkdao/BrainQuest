@@ -1,3 +1,4 @@
+import Toast from "react-native-toast-message";
 import { Category, Difficulty, Tab } from "./types";
 
 export const categories: Category[] = [
@@ -78,3 +79,11 @@ export const tabs: Tab[] = [
     icon: "barbell",
   },
 ];
+
+export const toast = (type: "success" | "error" | "info", text1: string, text2: string) => {
+  Toast.show({
+    type,
+    text1,
+    text2,
+  });
+}

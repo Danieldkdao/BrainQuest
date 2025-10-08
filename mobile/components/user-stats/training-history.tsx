@@ -9,6 +9,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import TrainPage from "../puzzling/train";
+import { toast } from "@/utils/utils";
 
 const TrainingHistoryPage = () => {
   const api = useApi();
@@ -31,9 +32,20 @@ const TrainingHistoryPage = () => {
       >("/train/get-sessions");
       if (response.data.success && response.data.sessions) {
         setSessions(response.data.sessions);
+        return;
       }
+      toast(
+        "error",
+        "Fetch error",
+        "Error fetching sessions. Please come back later."
+      );
     } catch (error) {
       console.error(error);
+      toast(
+        "error",
+        "Fetch error",
+        "Error fetching sessions. Please come back later."
+      );
     } finally {
       setLoading(false);
     }
@@ -52,9 +64,20 @@ const TrainingHistoryPage = () => {
       );
       if (response.data.success) {
         fetchSessions();
+        return;
       }
+      toast(
+        "error",
+        "Deletion error",
+        "Error deleting sessions. Please come back later."
+      );
     } catch (error) {
       console.error(error);
+      toast(
+        "error",
+        "Deletion error",
+        "Error deleting sessions. Please come back later."
+      );
     }
   };
 

@@ -15,10 +15,14 @@ import { usePuzzle } from "@/hooks/usePuzzle";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import * as FileSystem from "expo-file-system";
-import { Response, type PuzzleCategory, type PuzzleDifficulty } from "@/utils/types";
+import {
+  Response,
+  type PuzzleCategory,
+  type PuzzleDifficulty,
+} from "@/utils/types";
 import { useUser } from "@clerk/clerk-expo";
 import useApi from "@/utils/api";
-import { categories, difficulties } from "@/utils/utils";
+import { categories, difficulties, toast } from "@/utils/utils";
 
 type InputFieldsType = {
   puzzle: string;
@@ -80,7 +84,7 @@ const CreatePage = () => {
                 encoding: FileSystem.EncodingType.Base64,
               }
             );
-            setInputFields(prev => ({...prev, imageBase64: base64}));
+            setInputFields((prev) => ({ ...prev, imageBase64: base64 }));
           }
         }
       }
@@ -93,13 +97,20 @@ const CreatePage = () => {
   const handleSubmit = async () => {
     try {
       setLoading(true);
-
       const uriParts = inputFields.image?.split(".");
       const fileType = uriParts && uriParts[uriParts.length - 1];
       const imageType =
         fileType && fileType ? `image/${fileType.toLowerCase()}` : "image/jpeg";
 
       const imageDataUrl = `data:${imageType};base64,${inputFields.imageBase64}`;
+      if (
+        inputFields.puzzle.trim() === "" ||
+        inputFields.answer.trim() === "" ||
+        !imageDataUrl
+      ) {
+        toast("error", "Missing Information", "All fields must be filled out.");
+        return;
+      }
       const body = {
         question: inputFields.puzzle,
         answer: inputFields.answer,
@@ -110,15 +121,18 @@ const CreatePage = () => {
           id: user?.id,
           name: user?.fullName,
           profileImage: user?.imageUrl,
+        },
+      };
+      const response = await api.post<Response>(
+        "/puzzles/create-puzzle",
+        body,
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
         }
-      }
-      const response = await api.post<Response>("/puzzles/create-puzzle", body, {
-        headers: {
-          "Content-Type": "application/json"
-        }
-      });
-
-      if(response.data.success){
+      );
+      if (response.data.success) {
         setInputFields({
           puzzle: "",
           answer: "",
@@ -127,11 +141,22 @@ const CreatePage = () => {
           image: null,
           imageBase64: null,
         });
-        console.log(response.data.message);
         changeSelectedComponent(null);
       }
+      toast(
+        response.data.success ? "success" : "error",
+        response.data.success ? "Success" : "Error",
+        response.data.success
+          ? "Puzzle created successfully!"
+          : "An error occurred while creating your puzzle. Please try again later."
+      );
     } catch (error) {
       console.error(error);
+      toast(
+        "error",
+        "Error",
+        "An error occurred while creating your puzzle. Please try again later."
+      );
     } finally {
       setLoading(false);
     }

@@ -2,6 +2,7 @@ import express from "express";
 import { protectRoute } from "../middlewares/auth.middleware.ts";
 import {
   addUserToDB,
+  checkResetStreak,
   enableLeaderboard,
   enableNotifications,
   fetchUsers,
@@ -21,3 +22,4 @@ route.put("/update-puzzle-goal", updatePuzzleGoal);
 route.put("/update-points-goal", updatePointsGoal);
 route.get("/fetch-user-settings", fetchUserSettings);
 route.get("/fetch-users", fetchUsers);
+route.get("/check-reset-streak", checkResetStreak)

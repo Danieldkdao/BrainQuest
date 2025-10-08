@@ -3,12 +3,12 @@ import {
   Text,
   Image,
   TouchableOpacity,
-  Modal,
   TextInput,
   ActivityIndicator,
   ScrollView,
+  Pressable,
 } from "react-native";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useTheme } from "@/hooks/useTheme";
 import { Ionicons } from "@expo/vector-icons";
 import { convertDate } from "@/app/(main)/user-profile";
@@ -17,9 +17,12 @@ import { useUser } from "@clerk/clerk-expo";
 import { LinearGradient } from "expo-linear-gradient";
 import useApi from "@/utils/api";
 import { useAppUser } from "@/hooks/useAppUser";
+import { ReactNativeModal } from "react-native-modal";
+import { toast } from "@/utils/utils";
 
 type PuzzleCardProps = {
   item: Puzzle;
+  width: number;
 };
 
 type Result = {
@@ -27,7 +30,7 @@ type Result = {
   text: string | null;
 };
 
-const PuzzleCard = ({ item }: PuzzleCardProps) => {
+const PuzzleCard = ({ item, width }: PuzzleCardProps) => {
   const api = useApi();
   const { colors } = useTheme();
   const { user } = useUser();
@@ -45,6 +48,17 @@ const PuzzleCard = ({ item }: PuzzleCardProps) => {
     text: null,
   });
   const [loading, setLoading] = useState(false);
+  const [timeTaken, setTimeTaken] = useState(0);
+
+  useEffect(() => {
+    if (!showPuzzleModal) return;
+    if (result.text || loading) return;
+    const interval = setInterval(() => {
+      setTimeTaken((prev) => prev + 1);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [showPuzzleModal, result.text, loading]);
 
   const fetchComments = async () => {
     try {
@@ -53,10 +67,20 @@ const PuzzleCard = ({ item }: PuzzleCardProps) => {
       >(`/puzzles/get-comments/${item._id}`);
       if (response.data.success && response.data.comments) {
         setComments(response.data.comments);
-        console.log("Success");
+        return;
       }
+      toast(
+        "error",
+        "Fetch error",
+        "Error fetching comments. Please try again later."
+      );
     } catch (error) {
       console.error(error);
+      toast(
+        "error",
+        "Fetch error",
+        "Error fetching comments. Please try again later."
+      );
     }
   };
 
@@ -73,11 +97,20 @@ const PuzzleCard = ({ item }: PuzzleCardProps) => {
       if (response.data.success) {
         await fetchComments();
         setContent("");
-        console.log("Success");
+        return;
       }
-      console.log(response.data.message);
+      toast(
+        "error",
+        "Creation error",
+        "Error posting comment. Please try again later."
+      );
     } catch (error) {
       console.error(error);
+      toast(
+        "error",
+        "Creation error",
+        "Error posting comment. Please try again later."
+      );
     } finally {
       setLoading(false);
     }
@@ -100,11 +133,20 @@ const PuzzleCard = ({ item }: PuzzleCardProps) => {
         id: item._id,
         alreadyLiked,
       });
-      if (response.data.success) {
-        console.log(response.data.message);
+      if (!response.data.success) {
+        toast(
+          "error",
+          "Update error",
+          "Error updating puzzle likes. Please try again later."
+        );
       }
     } catch (error) {
       console.error(error);
+      toast(
+        "error",
+        "Update error",
+        "Error updating puzzle likes. Please try again later."
+      );
     }
   };
 
@@ -125,11 +167,20 @@ const PuzzleCard = ({ item }: PuzzleCardProps) => {
         id: item._id,
         alreadyDisliked,
       });
-      if (response.data.success) {
-        console.log(response.data.message);
+      if (!response.data.success) {
+        toast(
+          "error",
+          "Update error",
+          "Error updating puzzle dislikes. Please try again later."
+        );
       }
     } catch (error) {
       console.error(error);
+      toast(
+        "error",
+        "Update error",
+        "Error updating puzzle dislikes. Please try again later."
+      );
     }
   };
 
@@ -152,11 +203,13 @@ const PuzzleCard = ({ item }: PuzzleCardProps) => {
       const response = await api.post<
         Response<"correct", { correct: boolean }>
       >("/train/check-answer", {
+        puzzle: item.question,
         response: userRes,
         answer: item.answer,
         difficulty: item.difficulty,
         category: item.category,
         id: item._id,
+        timeTaken,
       });
       if (response.data.success && response.data.correct !== undefined) {
         setResult({
@@ -181,12 +234,20 @@ const PuzzleCard = ({ item }: PuzzleCardProps) => {
   return (
     <TouchableOpacity
       onPress={() => setShowPuzzleModal(true)}
-      className="w-full rounded-xl border-2 p-5 flex-row gap-5"
-      style={{ backgroundColor: colors.surface, borderColor: colors.border }}
+      className="w-full rounded-xl border-2 p-5 gap-5"
+      style={{
+        backgroundColor: colors.surface,
+        borderColor: colors.border,
+        maxWidth: width,
+      }}
     >
-      <Modal visible={showPuzzleModal} animationType="slide">
+      <ReactNativeModal
+        isVisible={showPuzzleModal}
+        animationIn="slideInUp"
+        animationOut="slideOutDown"
+      >
         <View
-          className="p-5 h-full gap-5"
+          className="p-5 h-full gap-5 rounded-xl"
           style={{ backgroundColor: colors.bg }}
         >
           <ScrollView contentContainerClassName="gap-5">
@@ -282,10 +343,14 @@ const PuzzleCard = ({ item }: PuzzleCardProps) => {
             </TouchableOpacity>
           </ScrollView>
         </View>
-      </Modal>
-      <Modal visible={showCommentsModal} animationType="slide">
+      </ReactNativeModal>
+      <ReactNativeModal
+        isVisible={showCommentsModal}
+        animationIn="slideInUp"
+        animationOut="slideOutDown"
+      >
         <View
-          className="p-5 h-full gap-5"
+          className="p-5 h-full gap-5 rounded-xl"
           style={{ backgroundColor: colors.bg }}
         >
           <View className="w-full flex-row justify-between items-center">
@@ -384,14 +449,14 @@ const PuzzleCard = ({ item }: PuzzleCardProps) => {
             </View>
           </View>
         </View>
-      </Modal>
+      </ReactNativeModal>
       <View>
         <Image
           source={{ uri: item.image.url }}
-          className="w-28 h-40 rounded-xl"
+          className="w-full h-40 rounded-xl"
         />
       </View>
-      <View className="flex-1">
+      <View className="gap-1">
         <Text
           className="text-xl font-semibold mb-1"
           style={{ color: colors.text }}
@@ -399,43 +464,67 @@ const PuzzleCard = ({ item }: PuzzleCardProps) => {
         >
           {item.question}
         </Text>
-        <View className="flex-row items-center gap-2 mt-1 mb-2">
-          <View
-            className="py-1 px-3 rounded"
-            style={{ backgroundColor: colors.gradients.empty[1] }}
+        <Pressable onPress={(e) => e.stopPropagation()}>
+          <ScrollView
+            horizontal
+            contentContainerClassName="flex-row items-center gap-2"
+            className="mt-1 mb-2"
           >
-            <Text style={{ color: colors.text }}>{item.category}</Text>
-          </View>
-          <View
-            className="py-1 px-3 rounded"
-            style={{ backgroundColor: colors.gradients.empty[1] }}
-          >
-            <Text style={{ color: colors.text }}>{item.difficulty}</Text>
-          </View>
-        </View>
-        <View className="flex-row gap-4">
-          <TouchableOpacity className="flex-row gap-2" onPress={like}>
-            <Ionicons name="thumbs-up" color={colors.text} size={20} />
-            <Text className="text-lg" style={{ color: colors.text }}>
-              {likes.length}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity className="flex-row gap-2" onPress={dislike}>
-            <Ionicons name="thumbs-down" color={colors.text} size={20} />
-            <Text className="text-lg" style={{ color: colors.text }}>
-              {dislikes.length}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => setShowCommentsModal(true)}
-            className="flex-row items-center gap-2"
-          >
-            <Ionicons name="chatbox" size={20} color={colors.text} />
-            <Text className="text-lg" style={{ color: colors.text }}>
-              {comments.length}
-            </Text>
-          </TouchableOpacity>
-        </View>
+            <View
+              className="py-1 px-3 rounded"
+              style={{ backgroundColor: colors.gradients.empty[1] }}
+            >
+              <Text style={{ color: colors.text }}>{item.category}</Text>
+            </View>
+            <View
+              className="py-1 px-3 rounded"
+              style={{ backgroundColor: colors.gradients.empty[1] }}
+            >
+              <Text style={{ color: colors.text }}>{item.difficulty}</Text>
+            </View>
+          </ScrollView>
+        </Pressable>
+        <Pressable onPress={(e) => e.stopPropagation()}>
+          <ScrollView horizontal contentContainerClassName="flex-row gap-4">
+            <TouchableOpacity className="flex-row gap-2" onPress={like}>
+              <Ionicons name="thumbs-up" color={colors.text} size={25} />
+              <Text className="text-xl" style={{ color: colors.text }}>
+                {likes.length}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity className="flex-row gap-2" onPress={dislike}>
+              <Ionicons name="thumbs-down" color={colors.text} size={25} />
+              <Text className="text-xl" style={{ color: colors.text }}>
+                {dislikes.length}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => setShowCommentsModal(true)}
+              className="flex-row items-center gap-2"
+            >
+              <Ionicons name="chatbox" size={25} color={colors.text} />
+              <Text className="text-xl" style={{ color: colors.text }}>
+                {comments.length}
+              </Text>
+            </TouchableOpacity>
+          </ScrollView>
+        </Pressable>
+        <Pressable onPress={(e) => e.stopPropagation()}>
+          <ScrollView horizontal contentContainerClassName="flex-row gap-4">
+            <View className="flex-row gap-2">
+              <Ionicons name="people" color={colors.text} size={25} />
+              <Text className="text-xl" style={{ color: colors.text }}>
+                {item.attempts.length}
+              </Text>
+            </View>
+            <View className="flex-row gap-2">
+              <Ionicons name="checkmark" color={colors.text} size={25} />
+              <Text className="text-xl" style={{ color: colors.text }}>
+                {item.successes.length}
+              </Text>
+            </View>
+          </ScrollView>
+        </Pressable>
         <Text className="text-sm" style={{ color: colors.textMuted }}>
           {convertDate(item.createdAt)}
         </Text>

@@ -7,7 +7,7 @@ import {
   PuzzleDifficulty,
 } from "@/utils/types";
 import useApi from "@/utils/api";
-import { tabs } from "@/utils/utils";
+import { tabs, toast } from "@/utils/utils";
 
 type PuzzleContextType = {
   selectedComponent: null | ReactNode;
@@ -70,8 +70,18 @@ export const PuzzleContextProvider = ({
       if (response.data.success && response.data.puzzles) {
         return response.data.puzzles;
       }
+      toast(
+        "error",
+        "Fetch error",
+        "Error fetching user information. Please come back later."
+      );
     } catch (error) {
       console.error(error);
+      toast(
+        "error",
+        "Fetch error",
+        "Error fetching user information. Please come back later."
+      );
     }
   };
 

@@ -23,7 +23,7 @@ const LeaderboardUserRow = ({
 
   return (
     <View
-      className="flex-row px-5 items-center w-full gap-2 rounded-lg"
+      className="flex-row px-5 items-center w-full gap-2 rounded-lg py-1"
       style={{
         backgroundColor: user?.id === userId ? colors.surface : "transparent",
       }}
@@ -56,7 +56,7 @@ const LeaderboardUserRow = ({
       </View>
       <View className="flex-1">
         <Text className="text-xl" style={{ color: colors.text }}>
-          {puzzles}
+          {puzzles.correct}
         </Text>
       </View>
     </View>

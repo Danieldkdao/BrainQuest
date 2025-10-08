@@ -12,16 +12,27 @@ import { useTheme } from "@/hooks/useTheme";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import useApi from "@/utils/api";
-import { Puzzle, Response } from "@/utils/types";
-import { TrainingStatsType } from "./train";
+import {
+  type Puzzle,
+  type Response,
+  type CategoryArrayItemSave,
+} from "@/utils/types";
+import { type TrainingStatsType } from "./train";
+import { usePuzzle } from "@/hooks/usePuzzle";
+import { toast } from "@/utils/utils";
 
 type PuzzleScreenProps = {
   puzzles: Puzzle[];
   currentPuzzle: number;
+  timeOnCurrentPuzzle: number;
   pause: boolean;
   setCurrentPuzzle: React.Dispatch<React.SetStateAction<number>>;
   setPause: React.Dispatch<React.SetStateAction<boolean>>;
   setTrainingStats: React.Dispatch<React.SetStateAction<TrainingStatsType>>;
+  setTimeOnCurrentPuzzle: React.Dispatch<React.SetStateAction<number>>;
+  setAllPuzzlesAnswered: React.Dispatch<
+    React.SetStateAction<CategoryArrayItemSave[]>
+  >;
   finish: () => void;
 };
 
@@ -33,10 +44,13 @@ type AnswerType = {
 const PuzzleScreen = ({
   puzzles,
   currentPuzzle,
+  timeOnCurrentPuzzle,
   pause,
   setCurrentPuzzle,
   setPause,
   setTrainingStats,
+  setTimeOnCurrentPuzzle,
+  setAllPuzzlesAnswered,
   finish,
 }: PuzzleScreenProps) => {
   const PointsReference = {
@@ -47,6 +61,7 @@ const PuzzleScreen = ({
 
   const api = useApi();
   const { colors } = useTheme();
+  const { changeSelectedComponent } = usePuzzle();
 
   const [isCorrect, setIsCorrect] = useState<AnswerType>({
     isCorrect: false,
@@ -63,6 +78,7 @@ const PuzzleScreen = ({
       const response = await api.post<
         Response<"correct", { correct: boolean }>
       >("/train/check-answer", {
+        puzzle: puzzles[currentPuzzle].question,
         response: userRes,
         answer: puzzles[currentPuzzle].answer,
         difficulty: puzzles[currentPuzzle].difficulty,
@@ -79,6 +95,13 @@ const PuzzleScreen = ({
             puzzlesSolved: prev.puzzlesSolved + 1,
           }));
         }
+        const thisPuzzle: CategoryArrayItemSave = {
+          category: puzzles[currentPuzzle].category,
+          isCorrect: response.data.correct || false,
+          timeSpent: timeOnCurrentPuzzle,
+        };
+        setAllPuzzlesAnswered((prev) => [...prev, thisPuzzle]);
+        setTimeOnCurrentPuzzle(0);
         setTrainingStats((prev) => ({
           ...prev,
           puzzlesAttempted: prev.puzzlesAttempted + 1,
@@ -88,10 +111,22 @@ const PuzzleScreen = ({
           isCorrect: response.data.correct ? response.data.correct : false,
         });
         setNoShowPrevAnswer(true);
+        return;
       }
-      console.log(response.data.message);
+      toast(
+        "error",
+        "An error occurred",
+        "Error checking answer. Please try again later."
+      );
+      changeSelectedComponent(null);
     } catch (error) {
       console.error(error);
+      toast(
+        "error",
+        "An error occurred",
+        "Error checking answer. Please try again later."
+      );
+      changeSelectedComponent(null);
     } finally {
       setLoading(false);
     }
@@ -157,7 +192,12 @@ const PuzzleScreen = ({
           {loading ? (
             <View className="w-full flex-row items-center justify-center gap-2">
               <ActivityIndicator size={25} color={colors.text} />
-              <Text className="text-xl font-bold" style={{color: colors.text}}>Checking...</Text>
+              <Text
+                className="text-xl font-bold"
+                style={{ color: colors.text }}
+              >
+                Checking...
+              </Text>
             </View>
           ) : (
             <Text

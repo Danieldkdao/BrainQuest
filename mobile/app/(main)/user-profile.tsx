@@ -19,6 +19,8 @@ import { usePuzzle } from "@/hooks/usePuzzle";
 import useApi from "@/utils/api";
 import { Response, User } from "@/utils/types";
 import { useAppUser } from "@/hooks/useAppUser";
+import Toast from "react-native-toast-message";
+import { toast } from "@/utils/utils";
 
 type ToolTipProps = {
   darkMode: boolean;
@@ -40,8 +42,12 @@ const UserProfilePage = () => {
   const { signOut } = useClerk();
   const { user } = useUser();
   const { confirm } = usePuzzle();
-  const { userSettings, fetchUserSettings, changeUserSettingState } =
-    useAppUser();
+  const {
+    userSettings,
+    fetchUserSettings,
+    fetchLeaderboardUsers,
+    changeUserSettingState,
+  } = useAppUser();
 
   const [visible, setVisible] = useState<ToolTipProps>({
     darkMode: false,
@@ -65,13 +71,18 @@ const UserProfilePage = () => {
     try {
       await signOut();
       Linking.openURL(Linking.createURL("/(auth)"));
-      Alert.alert("Success", "User logged out successfully!");
+      Toast.show({
+        type: "success",
+        text1: "Success",
+        text2: "User logged out successfully!",
+      });
     } catch (error) {
       console.error(error);
-      Alert.alert(
-        "An Error Occurred",
-        "Logout failed due to error. Please try again later."
-      );
+      Toast.show({
+        type: "error",
+        text1: "An Error Occurred",
+        text2: "Logout failed due to error. Please try again later.",
+      });
     }
   };
 
@@ -100,10 +111,19 @@ const UserProfilePage = () => {
       changeUserSettingState<"enableNotifications">("enableNotifications");
       const response = await api.put<Response>("/users/enable-notifications");
       if (!response.data.success) {
-        console.log(response.data.message);
+        toast(
+          "error",
+          "Update error",
+          "Error updating notification status. Please try again later."
+        );
       }
     } catch (error) {
       console.error(error);
+      toast(
+        "error",
+        "Update error",
+        "Error updating notification status. Please try again later."
+      );
     }
   };
 
@@ -112,10 +132,20 @@ const UserProfilePage = () => {
       changeUserSettingState<"enableLeaderboard">("enableLeaderboard");
       const response = await api.put<Response>("/users/enable-leaderboard");
       if (!response.data.success) {
-        console.log(response.data.message);
+        toast(
+          "error",
+          "Update error",
+          "Error updating leaderboard status. Please try again later."
+        );
       }
+      await fetchLeaderboardUsers();
     } catch (error) {
       console.error(error);
+      toast(
+        "error",
+        "Update error",
+        "Error updating leaderboard status. Please try again later."
+      );
     }
   };
 
@@ -125,10 +155,19 @@ const UserProfilePage = () => {
         newValue,
       });
       if (!response.data.success) {
-        console.log(response.data.message);
+        toast(
+          "error",
+          "Update error",
+          "Error updating puzzle goal. Please try again later."
+        );
       }
     } catch (error) {
       console.error(error);
+      toast(
+        "error",
+        "Update error",
+        "Error updating puzzle goal. Please try again later."
+      );
     }
   };
 
@@ -138,10 +177,19 @@ const UserProfilePage = () => {
         newValue,
       });
       if (!response.data.success) {
-        console.log(response.data.message);
+        toast(
+          "error",
+          "Update error",
+          "Error updating points goal. Please try again later."
+        );
       }
     } catch (error) {
       console.error(error);
+      toast(
+        "error",
+        "Update error",
+        "Error updating points goal. Please try again later."
+      );
     }
   };
 

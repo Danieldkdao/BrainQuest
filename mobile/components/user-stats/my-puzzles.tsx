@@ -9,6 +9,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { usePuzzle } from "@/hooks/usePuzzle";
 import { useRouter } from "expo-router";
 import CreatePage from "../puzzling/create";
+import { toast } from "@/utils/utils";
 
 type PagesType = {
   currentPage: number;
@@ -50,8 +51,18 @@ const MyPuzzlesPage = () => {
           maxPage: response.data.pages === 0 ? 1 : response.data.pages!,
         }));
       }
+      toast(
+        "error",
+        "Fetch error",
+        "Error fetching user puzzles. Please try again later."
+      );
     } catch (error) {
       console.error(error);
+      toast(
+        "error",
+        "Fetch error",
+        "Error fetching user puzzles. Please try again later."
+      );
     } finally {
       setLoading(false);
     }

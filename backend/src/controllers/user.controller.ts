@@ -1,6 +1,94 @@
 import { getAuth } from "@clerk/express";
 import { type Request, type Response } from "express";
-import userModel from "../models/user.model.ts";
+import userModel, {
+  defaultData3,
+  type LevelType,
+} from "../models/user.model.ts";
+import { chooseDailyChallenges } from "./challenge.controller.ts";
+import { addNewWeeks } from "./train.controller.ts";
+
+export const Levels: LevelType[] = [
+  {
+    level: 1,
+    title: "Puzzle Novice",
+    pointsNeeded: 0,
+    puzzlesNeeded: 0,
+    icon: "egg",
+    color: "#A0AEC0",
+  },
+  {
+    level: 2,
+    title: "Riddle Rookie",
+    pointsNeeded: 150,
+    puzzlesNeeded: 5,
+    icon: "search",
+    color: "#718096",
+  },
+  {
+    level: 3,
+    title: "Logic Learner",
+    pointsNeeded: 450,
+    puzzlesNeeded: 15,
+    icon: "book",
+    color: "#4299E1",
+  },
+  {
+    level: 4,
+    title: "Brain Explorer",
+    pointsNeeded: 900,
+    puzzlesNeeded: 30,
+    icon: "rocket",
+    color: "#48BB78",
+  },
+  {
+    level: 5,
+    title: "Memory Master",
+    pointsNeeded: 1500,
+    puzzlesNeeded: 50,
+    icon: "brain",
+    color: "#ED8936",
+  },
+  {
+    level: 6,
+    title: "Logic Guru",
+    pointsNeeded: 2400,
+    puzzlesNeeded: 80,
+    icon: "link",
+    color: "#D69E2E",
+  },
+  {
+    level: 7,
+    title: "Cognitive Champion",
+    pointsNeeded: 3600,
+    puzzlesNeeded: 120,
+    icon: "trophy",
+    color: "#B7791F",
+  },
+  {
+    level: 8,
+    title: "Mental Strategist",
+    pointsNeeded: 5100,
+    puzzlesNeeded: 170,
+    icon: "target",
+    color: "#805AD5",
+  },
+  {
+    level: 9,
+    title: "Puzzle Prodigy",
+    pointsNeeded: 7200,
+    puzzlesNeeded: 240,
+    icon: "star",
+    color: "#3182CE",
+  },
+  {
+    level: 10,
+    title: "Brainiac Mastermind",
+    pointsNeeded: 10500,
+    puzzlesNeeded: 350,
+    icon: "crown",
+    color: "#FFD700",
+  },
+];
 
 export const addUserToDB = async (
   req: Request<{}, {}, { name: string }>,
@@ -121,11 +209,61 @@ export const fetchUserSettings = async (req: Request, res: Response) => {
 export const fetchUsers = async (req: Request, res: Response) => {
   try {
     const users = await userModel
-      .find({}, { userId: 1, name: 1, points: 1, puzzles: 1, _id: 0 })
+      .find(
+        { enableLeaderboard: true },
+        { userId: 1, name: 1, points: 1, puzzles: 1, _id: 0 }
+      )
       .sort({ points: -1, puzzles: -1 });
     res.json({ success: true, message: "Users fetched successfully!", users });
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, message: "Failed to fetch users." });
+  }
+};
+
+export const checkResetStreak = async (req: Request, res: Response) => {
+  try {
+    const { userId } = getAuth(req);
+    const now = Date.now();
+    const user = await userModel.findOne(
+      { userId },
+      {
+        lastLogged: 1,
+        streak: 1,
+        todayPoints: 1,
+        todayPuzzles: 1,
+      }
+    );
+    if (!user)
+      return res.json({
+        success: false,
+        message: "User is not logged in or user doesn't exist.",
+      });
+    const nextDay = new Date(user.lastLogged);
+    nextDay.setHours(24, 0, 0, 0);
+    if (nextDay.getTime() + 24 * 60 * 60 * 1000 <= now) {
+      user.streak = 0;
+    }
+    if (nextDay.getTime() <= now) {
+      user.todayStats = defaultData3;
+      await chooseDailyChallenges();
+    }
+    const puzzleWeeks = await userModel.findOne(
+      { userId },
+      { "weekPoints.to": 1, _id: 0 }
+    );
+    if(puzzleWeeks?.weekPuzzles && puzzleWeeks.weekPuzzles.length > 0){
+      const sortedWeeks = puzzleWeeks.weekPuzzles.sort((a, b) => b.to - a.to);
+      if (sortedWeeks.length === 0 || sortedWeeks[0].to < now) {
+        await addNewWeeks(userId, now, 0, 0, 0, 0);
+      }
+    }
+    await user.save();
+    res.json({ success: true, message: "Check reset successful!" });
+  } catch (error) {
+    console.error(error);
+    res
+      .status(500)
+      .json({ success: false, message: "Failed to reset check reset streak." });
   }
 };

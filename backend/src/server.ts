@@ -5,11 +5,15 @@ import connectDB from "./config/db.ts";
 import { route as trainRoute } from "./routes/train.route.ts";
 import { route as puzzleRoute } from "./routes/puzzle.route.ts";
 import { route as userRoute } from "./routes/user.route.ts";
+import { route as badgeRoute } from "./routes/badge.route.ts";
+import { route as challengeRoute } from "./routes/challenge.route.ts";
 import puzzleModel from "./models/puzzle.model.ts";
 import { clerkMiddleware } from "@clerk/express";
 import trainingSessionModel from "./models/training-session.model.ts";
-import userModel from "./models/user.model.ts";
-import OpenAI from "openai";
+import userModel, { createNewWeekPuzzles } from "./models/user.model.ts";
+import badgeModel from "./models/badge.model.ts";
+import challengeModel from "./models/challenge.model.ts";
+import { chooseDailyChallenges } from "./controllers/challenge.controller.ts";
 
 dotenv.config();
 const app = express();
@@ -33,25 +37,10 @@ app.use(
 app.use("/api/users", userRoute);
 app.use("/api/puzzles", puzzleRoute);
 app.use("/api/train", trainRoute);
+app.use("/api/badges", badgeRoute);
+app.use("/api/challenges", challengeRoute);
 
 app.get("/", async (req: Request, res: Response) => {
-  // const openai = new OpenAI({
-  //   apiKey: process.env.GEMINI_API_KEY!,
-  //   baseURL: "https://generativelanguage.googleapis.com/v1beta/openai/",
-  // });
-
-  // const response = await openai.chat.completions.create({
-  //   model: "gemini-2.0-flash",
-  //   messages: [
-  //     { role: "system", content: "You are a helpful assistant." },
-  //     {
-  //       role: "user",
-  //       content: "Explain to me how AI works",
-  //     },
-  //   ],
-  // });
-
-  // console.log(response.choices[0].message);
   const r = await userModel.find();
   res.json(r);
 });
