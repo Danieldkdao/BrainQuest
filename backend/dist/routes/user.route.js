@@ -1,20 +1,8 @@
 import express from "express";
 import { protectRoute } from "../middlewares/auth.middleware.js";
-import {
-  addUserToDB,
-  checkResetStreak,
-  enableLeaderboard,
-  enableNotifications,
-  fetchUsers,
-  fetchUserSettings,
-  updatePointsGoal,
-  updatePuzzleGoal,
-} from "../controllers/user.controller.js";
-
+import { addUserToDB, checkResetStreak, enableLeaderboard, enableNotifications, fetchUsers, fetchUserSettings, updatePointsGoal, updatePuzzleGoal, } from "../controllers/user.controller.js";
 export const route = express.Router();
-
 route.use(protectRoute);
-
 route.post("/add-user-db", addUserToDB);
 route.put("/enable-notifications", enableNotifications);
 route.put("/enable-leaderboard", enableLeaderboard);

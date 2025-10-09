@@ -1,5 +1,5 @@
 import { type Request, type Response } from "express";
-import badgeModel from "../models/badge.model.ts";
+import badgeModel from "../models/badge.model.js";
 
 export const fetchBadges = async (req: Request, res: Response) => {
   try {

@@ -1,5 +1,5 @@
 import { type Request, type Response } from "express";
-import challengeModel from "../models/challenge.model.ts";
+import challengeModel from "../models/challenge.model.js";
 
 export const chooseDailyChallenges = async () => {
   try {

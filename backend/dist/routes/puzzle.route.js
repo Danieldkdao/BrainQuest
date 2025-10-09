@@ -1,24 +1,8 @@
 import express from "express";
 import { protectRoute } from "../middlewares/auth.middleware.js";
-import {
-  createPuzzle,
-  deletePuzzle,
-  dislike,
-  getComments,
-  getDailyPuzzle,
-  getDiscoverCategoryPuzzles,
-  getPopularPuzzles,
-  getPuzzles,
-  getScrollPuzzles,
-  getUserPuzzles,
-  like,
-  postComment,
-} from "../controllers/puzzle.controller.js";
-
+import { createPuzzle, deletePuzzle, dislike, getComments, getDailyPuzzle, getDiscoverCategoryPuzzles, getPopularPuzzles, getPuzzles, getScrollPuzzles, getUserPuzzles, like, postComment, } from "../controllers/puzzle.controller.js";
 export const route = express.Router();
-
 route.use(protectRoute);
-
 route.get("/get-user-puzzles", getUserPuzzles);
 route.post("/create-puzzle", createPuzzle);
 route.post("/get-puzzles", getPuzzles);

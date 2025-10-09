@@ -1,8 +1,8 @@
 import cron from "cron";
 import https from "https";
-import { chooseDailyChallenges } from "../controllers/challenge.controller.ts";
-import { chooseDailyPuzzle } from "../controllers/puzzle.controller.ts";
-import userModel, { defaultData3 } from "../models/user.model.ts";
+import { chooseDailyChallenges } from "../controllers/challenge.controller.js";
+import { chooseDailyPuzzle } from "../controllers/puzzle.controller.js";
+import userModel, { defaultData3 } from "../models/user.model.js";
 
 export const keepOpen = new cron.CronJob("*/14 * * * *", () => {
   https

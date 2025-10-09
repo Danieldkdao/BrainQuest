@@ -1,17 +1,8 @@
 import express from "express";
-import {
-  checkAnswer,
-  clearSessionHistory,
-  deleteTrainingSession,
-  getTrainingSessions,
-  saveTrainingSession,
-} from "../controllers/train.controller.js";
+import { checkAnswer, clearSessionHistory, deleteTrainingSession, getTrainingSessions, saveTrainingSession, } from "../controllers/train.controller.js";
 import { protectRoute } from "../middlewares/auth.middleware.js";
-
 export const route = express.Router();
-
 route.use(protectRoute);
-
 route.post("/check-answer", checkAnswer);
 route.post("/save-session", saveTrainingSession);
 route.get("/get-sessions", getTrainingSessions);

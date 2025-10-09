@@ -3,10 +3,10 @@ import { type Request, type Response } from "express";
 import userModel, {
   defaultData3,
   type LevelType,
-} from "../models/user.model.ts";
-import { chooseDailyChallenges } from "./challenge.controller.ts";
-import { addNewWeeks } from "./train.controller.ts";
-import { chooseDailyPuzzle } from "./puzzle.controller.ts";
+} from "../models/user.model.js";
+import { chooseDailyChallenges } from "./challenge.controller.js";
+import { addNewWeeks } from "./train.controller.js";
+import { chooseDailyPuzzle } from "./puzzle.controller.js";
 
 export const Levels: LevelType[] = [
   {
@@ -247,7 +247,7 @@ export const checkResetStreak = async (req: Request, res: Response) => {
       { userId },
       { "weekPoints.to": 1, _id: 0 }
     );
-    if(puzzleWeeks?.weekPuzzles && puzzleWeeks.weekPuzzles.length > 0){
+    if (puzzleWeeks?.weekPuzzles && puzzleWeeks.weekPuzzles.length > 0) {
       const sortedWeeks = puzzleWeeks.weekPuzzles.sort((a, b) => b.to - a.to);
       if (sortedWeeks.length === 0 || sortedWeeks[0].to < now) {
         await addNewWeeks(userId, now, 0, 0, 0, 0);

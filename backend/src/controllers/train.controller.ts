@@ -1,11 +1,11 @@
 import { getAuth } from "@clerk/express";
 import axios from "axios";
 import { type Request, type Response } from "express";
-import trainingSessionModel from "../models/training-session.model.ts";
+import trainingSessionModel from "../models/training-session.model.js";
 import puzzleModel, {
   type PuzzleCategory,
   type PuzzleDifficulty,
-} from "../models/puzzle.model.ts";
+} from "../models/puzzle.model.js";
 import userModel, {
   type PuzzleCategoryData,
   type LevelType,
@@ -15,18 +15,18 @@ import userModel, {
   createNewWeekTimeSpent,
   calcDaysTillSun,
   resetDay,
-} from "../models/user.model.ts";
-import badgeModel from "../models/badge.model.ts";
+} from "../models/user.model.js";
+import badgeModel from "../models/badge.model.js";
 import OpenAI from "openai";
-import { Levels } from "./user.controller.ts";
+import { Levels } from "./user.controller.js";
 import {
   PointsReference,
   BadgeReference,
   ChallengeReference,
-} from "../utils/reference.ts";
-import challengeModel from "../models/challenge.model.ts";
-import { chooseDailyChallenges } from "./challenge.controller.ts";
-import { chooseDailyPuzzle } from "./puzzle.controller.ts";
+} from "../utils/reference.js";
+import challengeModel from "../models/challenge.model.js";
+import { chooseDailyChallenges } from "./challenge.controller.js";
+import { chooseDailyPuzzle } from "./puzzle.controller.js";
 
 type QueryForLevel = {
   userId: string | null;
@@ -382,7 +382,7 @@ export const checkAnswer = async (
           message: "Sorry, you've already attempted this puzzle previously.",
           correct: false,
         });
-      if(isDaily && puzzle?.dailyPuzzleAttempts.includes(userId)){
+      if (isDaily && puzzle?.dailyPuzzleAttempts.includes(userId)) {
         return res.json({
           success: true,
           message: "Sorry, you've already attempted the daily puzzle.",
@@ -436,7 +436,9 @@ export const checkAnswer = async (
     // });
     if (id) {
       const updateField = isDaily ? "dailyPuzzleAttempts" : "attempts";
-      await puzzleModel.findByIdAndUpdate(id, { $push: { [updateField]: userId } });
+      await puzzleModel.findByIdAndUpdate(id, {
+        $push: { [updateField]: userId },
+      });
     }
     const isCorrect = checkResponse.data.choices[0].message.content?.trim();
     let send;

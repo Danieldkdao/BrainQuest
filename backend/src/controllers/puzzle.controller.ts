@@ -3,8 +3,8 @@ import puzzleModel, {
   type IPuzzle,
   type PuzzleCategory,
   type PuzzleDifficulty,
-} from "../models/puzzle.model.ts";
-import cloudinary, { deleteImage } from "../config/cloudinary.ts";
+} from "../models/puzzle.model.js";
+import cloudinary, { deleteImage } from "../config/cloudinary.js";
 import { getAuth } from "@clerk/express";
 
 export const chooseDailyPuzzle = async () => {

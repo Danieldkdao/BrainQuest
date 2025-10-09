@@ -1,6 +1,6 @@
-import challengeModel from "../models/challenge.model.ts";
-import trainingSessionModel from "../models/training-session.model.ts";
-import userModel, { type TodayStats } from "../models/user.model.ts";
+import challengeModel from "../models/challenge.model.js";
+import trainingSessionModel from "../models/training-session.model.js";
+import userModel, { type TodayStats } from "../models/user.model.js";
 
 const addPoints = async (userId: string | null, points: number) => {
   const dateNum = Date.now();

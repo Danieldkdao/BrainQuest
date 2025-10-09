@@ -1,5 +1,5 @@
 import mongoose, { Document, Schema, Model } from "mongoose";
-import { type CategoryArrayItemSave } from "../controllers/train.controller.ts";
+import { type CategoryArrayItemSave } from "../controllers/train.controller.js";
 
 export const resetDay = (
   correct: number,
