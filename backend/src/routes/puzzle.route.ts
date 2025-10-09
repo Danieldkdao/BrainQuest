@@ -5,6 +5,7 @@ import {
   deletePuzzle,
   dislike,
   getComments,
+  getDailyPuzzle,
   getDiscoverCategoryPuzzles,
   getPopularPuzzles,
   getPuzzles,
@@ -25,6 +26,7 @@ route.delete("/delete-puzzle/:id", deletePuzzle);
 route.get("/get-popular-puzzles", getPopularPuzzles);
 route.get("/get-discover-category-puzzles", getDiscoverCategoryPuzzles);
 route.post("/get-scroll-puzzles", getScrollPuzzles);
+route.get("/get-daily-puzzle", getDailyPuzzle);
 route.post("/post-comment", postComment);
 route.get("/get-comments/:id", getComments);
 route.put("/like-puzzle", like);

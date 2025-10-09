@@ -25,7 +25,7 @@ type PuzzleCardProps = {
   width: number;
 };
 
-type Result = {
+export type Result = {
   isCorrect: boolean;
   text: string | null;
 };
@@ -216,16 +216,29 @@ const PuzzleCard = ({ item, width }: PuzzleCardProps) => {
           isCorrect: response.data.correct,
           text: response.data.message,
         });
+        return;
       }
+      toast(
+        "error",
+        "Process Error",
+        "Error checking response. Please try again later."
+      );
+      closeModal();
     } catch (error) {
       console.error(error);
+      toast(
+        "error",
+        "Process Error",
+        "Error checking response. Please try again later."
+      );
+      closeModal();
     } finally {
       setLoading(false);
       fetchUserSettings();
     }
   };
 
-  const close = () => {
+  const closeModal = () => {
     setShowPuzzleModal(false);
     setUserRes("");
     setResult({ isCorrect: true, text: null });
@@ -258,7 +271,7 @@ const PuzzleCard = ({ item, width }: PuzzleCardProps) => {
               >
                 Try Puzzle
               </Text>
-              <TouchableOpacity onPress={close}>
+              <TouchableOpacity onPress={closeModal}>
                 <Ionicons name="close-circle" size={40} color={colors.text} />
               </TouchableOpacity>
             </View>

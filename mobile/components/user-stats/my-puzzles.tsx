@@ -42,14 +42,18 @@ const MyPuzzlesPage = () => {
     setLoading(true);
     try {
       const response = await api.get<
-        Response<"puzzles" | "pages", { puzzles: Puzzle[]; pages: number }>
+        Response<
+          "puzzles" | "pages" | "page",
+          { puzzles: Puzzle[]; pages: number; page: number }
+        >
       >(`/puzzles/get-user-puzzles?limit=${5}&page=${page}`);
       if (response.data.success && response.data.puzzles) {
         setPuzzles(response.data.puzzles);
-        setPages((prev) => ({
-          ...prev,
+        setPages({
+          currentPage: response.data.page ? response.data.page : 0,
           maxPage: response.data.pages === 0 ? 1 : response.data.pages!,
-        }));
+        });
+        return;
       }
       toast(
         "error",

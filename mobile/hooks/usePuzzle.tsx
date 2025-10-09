@@ -11,13 +11,13 @@ import { tabs, toast } from "@/utils/utils";
 
 type PuzzleContextType = {
   selectedComponent: null | ReactNode;
+  selectedTab: number;
   changeSelectedComponent: (com: null | ReactNode) => void;
   confirm: (title: string, text: string) => Promise<unknown | boolean>;
   fetchPuzzles: (
     categories: PuzzleCategory[],
     difficulties: PuzzleDifficulty[]
   ) => Promise<Puzzle[] | undefined>;
-  selectedTab: number;
   changeSelectedTab: (tab: number) => void;
 };
 
@@ -89,10 +89,10 @@ export const PuzzleContextProvider = ({
     <PuzzleContext.Provider
       value={{
         selectedComponent,
+        selectedTab,
         changeSelectedComponent,
         confirm,
         fetchPuzzles,
-        selectedTab,
         changeSelectedTab,
       }}
     >

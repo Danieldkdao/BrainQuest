@@ -8,6 +8,7 @@ import {
   Dimensions,
   Modal,
   ActivityIndicator,
+  TextInput,
 } from "react-native";
 import { useUser } from "@clerk/clerk-expo";
 import { useTheme } from "@/hooks/useTheme";
@@ -19,19 +20,28 @@ import useApi from "@/utils/api";
 import { Response } from "@/utils/types";
 import { useAppUser } from "@/hooks/useAppUser";
 import { usePuzzle } from "@/hooks/usePuzzle";
-import { tabs } from "@/utils/utils";
+import { tabs, toast } from "@/utils/utils";
 import LeaderboardUserRow from "@/components/user-stats/leaderboard-user-row";
+import ReactNativeModal from "react-native-modal";
+import { type Result } from "@/components/puzzling/puzzle-card";
 
 const Home = () => {
   const api = useApi();
   const { user } = useUser();
   const router = useRouter();
   const { colors } = useTheme();
-  const { fetchUserSettings, userSettings, leaderboardUsers } = useAppUser();
+  const { fetchUserSettings, userSettings, leaderboardUsers, getDailyPuzzle, dailyPuzzle } = useAppUser();
   const { changeSelectedTab } = usePuzzle();
 
   const [openDailyExercise, setOpenDailyExercise] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [userRes, setUserRes] = useState("");
+  const [result, setResult] = useState<Result>({
+    isCorrect: true,
+    text: null,
+  });
+  const [checkLoading, setCheckLoading] = useState(false);
+  const [timeTaken, setTimeTaken] = useState(0);
 
   const screenWidth = Dimensions.get("window").width;
 
@@ -40,10 +50,21 @@ const Home = () => {
       await addUserToDB();
       await checkResetStreak();
       await fetchUserSettings();
+      await getDailyPuzzle();
       setLoading(false);
     };
     wait();
   }, []);
+
+  useEffect(() => {
+    if (!openDailyExercise) return;
+    if (result.text || checkLoading) return;
+    const interval = setInterval(() => {
+      setTimeTaken((prev) => prev + 1);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [openDailyExercise, result.text, checkLoading]);
 
   const checkResetStreak = async () => {
     try {
@@ -77,6 +98,55 @@ const Home = () => {
     if (now < twelvePm) return "Good Morning";
     if (twelvePm <= now && now < sixPm) return "Good Afternoon";
     return "Good Evening";
+  };
+
+  const checkAnswer = async () => {
+    setCheckLoading(true);
+    setResult((prev) => ({ ...prev, text: null }));
+    try {
+      const response = await api.post<
+        Response<"correct", { correct: boolean }>
+      >("/train/check-answer", {
+        puzzle: dailyPuzzle?.question,
+        response: userRes,
+        answer: dailyPuzzle?.answer,
+        difficulty: dailyPuzzle?.difficulty,
+        category: dailyPuzzle?.category,
+        id: dailyPuzzle?._id,
+        timeTaken,
+        isDaily: true,
+      });
+      if (response.data.success && response.data.correct !== undefined) {
+        setResult({
+          isCorrect: response.data.correct,
+          text: response.data.message,
+        });
+        return;
+      }
+      toast(
+        "error",
+        "Process Error",
+        "Error checking response. Please try again later."
+      );
+      closeModal();
+    } catch (error) {
+      console.error(error);
+      toast(
+        "error",
+        "Process Error",
+        "Error checking response. Please try again later."
+      );
+      closeModal();
+    } finally {
+      setCheckLoading(false);
+      fetchUserSettings();
+    }
+  };
+
+  const closeModal = () => {
+    setOpenDailyExercise(false);
+    setUserRes("");
+    setResult({ isCorrect: true, text: null });
   };
 
   return (
@@ -192,8 +262,10 @@ const Home = () => {
                       : 0
                   }
                   color={
-                    userSettings?.todayStats.puzzles.correct && userSettings?.puzzleGoal
-                      ? userSettings.todayStats.puzzles.correct >= userSettings.puzzleGoal
+                    userSettings?.todayStats.puzzles.correct &&
+                    userSettings?.puzzleGoal
+                      ? userSettings.todayStats.puzzles.correct >=
+                        userSettings.puzzleGoal
                         ? colors.success
                         : colors.gradients.muted[0]
                       : colors.gradients.muted[0]
@@ -215,8 +287,10 @@ const Home = () => {
                     className="text-xl font-bold"
                     style={{ color: colors.text }}
                   >
-                    {userSettings?.todayStats.points ? userSettings.todayStats.points : 0}/
-                    {userSettings?.pointsGoal ? userSettings.pointsGoal : 0}
+                    {userSettings?.todayStats.points
+                      ? userSettings.todayStats.points
+                      : 0}
+                    /{userSettings?.pointsGoal ? userSettings.pointsGoal : 0}
                   </Text>
                 </View>
                 <Progress.Bar
@@ -227,7 +301,8 @@ const Home = () => {
                   }
                   color={
                     userSettings?.todayStats.points && userSettings?.pointsGoal
-                      ? userSettings.todayStats.points >= userSettings.pointsGoal
+                      ? userSettings.todayStats.points >=
+                        userSettings.pointsGoal
                         ? colors.success
                         : colors.gradients.muted[0]
                       : colors.gradients.muted[0]
@@ -240,28 +315,145 @@ const Home = () => {
                 />
               </View>
             </View>
-            <Modal visible={openDailyExercise} animationType="slide">
+            <ReactNativeModal
+              isVisible={openDailyExercise}
+              animationIn="slideInUp"
+            >
               <View
-                className="p-5 h-full"
+                className="h-full w-full rounded-xl p-5"
                 style={{ backgroundColor: colors.bg }}
               >
-                <View className="w-full flex-row items-center justify-between">
-                  <Text
-                    className="text-3xl font-bold"
-                    style={{ color: colors.text }}
-                  >
-                    Daily Puzzle
-                  </Text>
-                  <TouchableOpacity onPress={() => setOpenDailyExercise(false)}>
-                    <Ionicons
-                      name="close-circle"
-                      color={colors.text}
-                      size={48}
+                {dailyPuzzle ? (
+                  <ScrollView contentContainerClassName="gap-5">
+                    <View className="w-full flex-row items-center justify-between">
+                      <Text
+                        className="text-3xl font-bold"
+                        style={{ color: colors.text }}
+                      >
+                        Daily Puzzle
+                      </Text>
+                      <TouchableOpacity onPress={closeModal}>
+                        <Ionicons
+                          name="close-circle"
+                          color={colors.text}
+                          size={48}
+                        />
+                      </TouchableOpacity>
+                    </View>
+                    <Image
+                      source={{ uri: dailyPuzzle?.image.url }}
+                      className="w-full h-[200px] rounded-xl"
                     />
-                  </TouchableOpacity>
-                </View>
+                    <View
+                      className="rounded-lg overflow-hidden"
+                      style={{ display: result.text ? "flex" : "none" }}
+                    >
+                      <LinearGradient
+                        colors={
+                          result.isCorrect
+                            ? colors.gradients.success
+                            : colors.gradients.danger
+                        }
+                      >
+                        <Text className="text-lg font-medium text-white py-2 px-4">
+                          {result.text}
+                        </Text>
+                      </LinearGradient>
+                    </View>
+                    <Text
+                      className="text-xl font-medium"
+                      style={{ color: colors.text }}
+                    >
+                      {dailyPuzzle?.question}
+                    </Text>
+                    <TextInput
+                      value={userRes}
+                      onChangeText={(text) => setUserRes(text)}
+                      multiline
+                      textAlignVertical="top"
+                      className="border-2 rounded-xl px-4 h-36 text-lg"
+                      style={{
+                        backgroundColor: colors.surface,
+                        borderColor: colors.border,
+                        color: colors.text,
+                      }}
+                    />
+                    <TouchableOpacity
+                      onPress={checkAnswer}
+                      disabled={checkLoading}
+                      className="rounded-xl overflow-hidden"
+                      style={{ opacity: checkLoading ? 0.6 : 1 }}
+                    >
+                      <LinearGradient
+                        className="py-3"
+                        colors={colors.gradients.empty}
+                      >
+                        {checkLoading ? (
+                          <View className="w-full flex-row items-center justify-center gap-2">
+                            <ActivityIndicator size={25} color={colors.text} />
+                            <Text
+                              className="text-xl font-bold"
+                              style={{ color: colors.text }}
+                            >
+                              Checking...
+                            </Text>
+                          </View>
+                        ) : (
+                          <Text
+                            className="text-center text-xl font-bold"
+                            style={{ color: colors.text }}
+                          >
+                            Check Answer
+                          </Text>
+                        )}
+                      </LinearGradient>
+                    </TouchableOpacity>
+                    <TouchableOpacity className="rounded-xl overflow-hidden">
+                      <LinearGradient
+                        className="py-3 flex-row items-center justify-center gap-3 w-full"
+                        colors={colors.gradients.empty}
+                      >
+                        <Ionicons name="bulb" size={25} color={colors.text} />
+                        <Text
+                          className="text-center text-xl font-bold"
+                          style={{ color: colors.text }}
+                        >
+                          Hint
+                        </Text>
+                      </LinearGradient>
+                    </TouchableOpacity>
+                  </ScrollView>
+                ) : (
+                  <View className="rounded-xl overflow-hidden">
+                    <LinearGradient
+                      colors={colors.gradients.danger}
+                      className="gap-2 p-5"
+                    >
+                      <Ionicons
+                        name="close-circle"
+                        size={50}
+                        color={colors.text}
+                      />
+                      <Text
+                        className="text-3xl font-bold"
+                        style={{ color: colors.text }}
+                      >
+                        Error
+                      </Text>
+                      <Text
+                        className="text-xl font-medium"
+                        style={{ color: colors.textMuted }}
+                      >
+                        We are currently experiencing issues and are unable to
+                        fetch this puzzle. If you can, try the other features in
+                        the meantime while we get this fixed. Otherwise come
+                        back later.
+                      </Text>
+                    </LinearGradient>
+                  </View>
+                )}
               </View>
-            </Modal>
+            </ReactNativeModal>
             <View className="gap-2">
               <Text
                 className="text-xl font-bold"
@@ -342,7 +534,9 @@ const Home = () => {
                         name={userSettings?.name ? userSettings.name : ""}
                         points={userSettings?.points ? userSettings.points : 0}
                         puzzles={
-                          userSettings?.puzzles ? userSettings.puzzles : { correct: 0, incorrect:0 }
+                          userSettings?.puzzles
+                            ? userSettings.puzzles
+                            : { correct: 0, incorrect: 0 }
                         }
                         rank={
                           leaderboardUsers.findIndex(
@@ -369,12 +563,6 @@ const Home = () => {
               </View>
             ) : (
               <View>
-                <Text
-                  className="text-xl font-bold"
-                  style={{ color: colors.text }}
-                >
-                  Leaderboard
-                </Text>
                 <View className="rounded-xl overflow-hidden">
                   <LinearGradient
                     className="gap-2 p-4 items-center"
@@ -385,7 +573,10 @@ const Home = () => {
                       size={50}
                       color={colors.textMuted}
                     />
-                    <Text className="text-xl font-bold">
+                    <Text
+                      className="text-xl font-bold"
+                      style={{ color: colors.text }}
+                    >
                       Leaderboard Disabled
                     </Text>
                     <Text

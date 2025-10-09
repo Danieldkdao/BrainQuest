@@ -7,6 +7,17 @@ import puzzleModel, {
 import cloudinary, { deleteImage } from "../config/cloudinary.ts";
 import { getAuth } from "@clerk/express";
 
+export const chooseDailyPuzzle = async () => {
+  await puzzleModel.updateMany({}, { $set: { isDaily: false } });
+  const randomPuzzle = await puzzleModel.aggregate([
+    { $sample: { size: 1 } },
+    { $project: { _id: 1 } },
+  ]);
+  if (!randomPuzzle || randomPuzzle.length === 0) return;
+  const puzzleId = randomPuzzle[0]._id;
+  await puzzleModel.updateOne({ _id: puzzleId }, { $set: { isDaily: true } });
+};
+
 type CreateType = {
   question: string;
   answer: string;
@@ -92,22 +103,40 @@ export const getUserPuzzles = async (
 ) => {
   try {
     const { userId } = getAuth(req);
+    let puzzles;
     const limit = Number(req.query.limit);
-    const page = Number(req.query.page);
-    const [puzzles, total] = await Promise.all([
-      puzzleModel
+    let page = Number(req.query.page);
+    const total = await puzzleModel.countDocuments({ "creator.id": userId });
+    const pages = Math.ceil(total / limit);
+    if (page === pages) {
+      const newCurrentPage = page - 1;
+      if (newCurrentPage < 0) {
+        puzzles = await puzzleModel
+          .find({ "creator.id": userId })
+          .sort({ _id: -1 })
+          .limit(limit);
+        page = 0;
+      } else {
+        puzzles = await puzzleModel
+          .find({ "creator.id": userId })
+          .sort({ _id: -1 })
+          .skip(limit * newCurrentPage)
+          .limit(limit);
+        page--;
+      }
+    } else {
+      puzzles = await puzzleModel
         .find({ "creator.id": userId })
         .sort({ _id: -1 })
         .skip(limit * page)
-        .limit(limit),
-      puzzleModel.countDocuments({ "creator.id": userId }),
-    ]);
-    const pages = Math.ceil(total / limit);
+        .limit(limit);
+    }
     res.json({
       success: true,
       message: "User puzzles fetched successfully!",
       puzzles,
       pages,
+      page,
     });
   } catch (error) {
     console.error(error);
@@ -232,6 +261,24 @@ export const getScrollPuzzles = async (
     res
       .status(500)
       .json({ success: false, message: "Failed to retrieve scroll puzzles." });
+  }
+};
+
+export const getDailyPuzzle = async (req: Request, res: Response) => {
+  try {
+    const puzzle = await puzzleModel.findOne({ isDaily: true });
+    if (!puzzle)
+      return res.json({ success: false, message: "No daily puzzle found." });
+    res.json({
+      success: true,
+      message: "Daily puzzle fetched successfully!",
+      puzzle,
+    });
+  } catch (error) {
+    console.error(error);
+    res
+      .status(500)
+      .json({ success: false, message: "Error fetching daily puzzle." });
   }
 };
 

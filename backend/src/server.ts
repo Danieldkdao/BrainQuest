@@ -7,19 +7,22 @@ import { route as puzzleRoute } from "./routes/puzzle.route.ts";
 import { route as userRoute } from "./routes/user.route.ts";
 import { route as badgeRoute } from "./routes/badge.route.ts";
 import { route as challengeRoute } from "./routes/challenge.route.ts";
-import puzzleModel from "./models/puzzle.model.ts";
 import { clerkMiddleware } from "@clerk/express";
+import { runDaily, keepOpen } from "./config/cron.ts";
+import puzzleModel from "./models/puzzle.model.ts";
 import trainingSessionModel from "./models/training-session.model.ts";
 import userModel, { createNewWeekPuzzles } from "./models/user.model.ts";
 import badgeModel from "./models/badge.model.ts";
 import challengeModel from "./models/challenge.model.ts";
 import { chooseDailyChallenges } from "./controllers/challenge.controller.ts";
+import { chooseDailyPuzzle } from "./controllers/puzzle.controller.ts";
 
 dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
 await connectDB();
+runDaily.start();
 
 app.use(express.json());
 app.use(

@@ -6,6 +6,7 @@ import userModel, {
 } from "../models/user.model.ts";
 import { chooseDailyChallenges } from "./challenge.controller.ts";
 import { addNewWeeks } from "./train.controller.ts";
+import { chooseDailyPuzzle } from "./puzzle.controller.ts";
 
 export const Levels: LevelType[] = [
   {
@@ -230,8 +231,6 @@ export const checkResetStreak = async (req: Request, res: Response) => {
       {
         lastLogged: 1,
         streak: 1,
-        todayPoints: 1,
-        todayPuzzles: 1,
       }
     );
     if (!user)
@@ -243,10 +242,6 @@ export const checkResetStreak = async (req: Request, res: Response) => {
     nextDay.setHours(24, 0, 0, 0);
     if (nextDay.getTime() + 24 * 60 * 60 * 1000 <= now) {
       user.streak = 0;
-    }
-    if (nextDay.getTime() <= now) {
-      user.todayStats = defaultData3;
-      await chooseDailyChallenges();
     }
     const puzzleWeeks = await userModel.findOne(
       { userId },

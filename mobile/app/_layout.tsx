@@ -7,6 +7,17 @@ import { ThemeProvider } from "@/hooks/useTheme";
 import { PuzzleContextProvider } from "@/hooks/usePuzzle";
 import { AppUserContextProvider } from "@/hooks/useAppUser";
 import ToastProvider from "@/components/ToastProvider";
+import * as Notifications from 'expo-notifications';
+import NotificationSetup from "@/components/NotificationSetup";
+
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldPlaySound: true, 
+    shouldSetBadge: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
+  })
+});
 
 export default function RootLayout() {
   return (
@@ -16,6 +27,7 @@ export default function RootLayout() {
           <ThemeProvider>
             <SafeArea>
               <Slot />
+              <NotificationSetup />
               <ToastProvider />
             </SafeArea>
           </ThemeProvider>

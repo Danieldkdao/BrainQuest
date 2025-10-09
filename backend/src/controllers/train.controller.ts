@@ -25,6 +25,8 @@ import {
   ChallengeReference,
 } from "../utils/reference.ts";
 import challengeModel from "../models/challenge.model.ts";
+import { chooseDailyChallenges } from "./challenge.controller.ts";
+import { chooseDailyPuzzle } from "./puzzle.controller.ts";
 
 type QueryForLevel = {
   userId: string | null;
@@ -46,6 +48,7 @@ type CheckAnswerBody = {
   category: PuzzleCategory;
   id?: string;
   timeTaken?: number;
+  isDaily: boolean;
 };
 
 type OpenRouterChatCompletion = {
@@ -314,24 +317,6 @@ const updateUser = async (
         timeSpent
       );
     }
-    const nextDay = new Date(user.lastLogged);
-    nextDay.setHours(23, 59, 59, 999);
-    if (nextDay.getTime() < numDate) {
-      await userModel.findOneAndUpdate(
-        { userId },
-        {
-          $set: {
-            todayStats: resetDay(
-              correctPuzzles,
-              incorrectPuzzles,
-              pointsEarned,
-              timeSpent,
-              categories
-            ),
-          },
-        }
-      );
-    }
     const operations = categories.map((item) => {
       const update = item.isCorrect
         ? {
@@ -378,17 +363,32 @@ export const checkAnswer = async (
   res: Response
 ) => {
   const { userId } = getAuth(req);
-  const { puzzle, response, answer, difficulty, category, id, timeTaken } =
-    req.body;
+  const {
+    puzzle,
+    response,
+    answer,
+    difficulty,
+    category,
+    id,
+    timeTaken,
+    isDaily,
+  } = req.body;
   try {
     if (id && userId) {
       const puzzle = await puzzleModel.findById(id);
-      if (puzzle?.attempts.includes(userId))
+      if (!isDaily && puzzle?.attempts.includes(userId))
         return res.json({
           success: true,
           message: "Sorry, you've already attempted this puzzle previously.",
           correct: false,
         });
+      if(isDaily && puzzle?.dailyPuzzleAttempts.includes(userId)){
+        return res.json({
+          success: true,
+          message: "Sorry, you've already attempted the daily puzzle.",
+          correct: false,
+        });
+      }
     }
     const checkResponse = await axios.post<OpenRouterChatCompletion>(
       "https://openrouter.ai/api/v1/chat/completions",
@@ -435,12 +435,13 @@ export const checkAnswer = async (
     //   ],
     // });
     if (id) {
-      await puzzleModel.findByIdAndUpdate(id, { $push: { attempts: userId } });
+      const updateField = isDaily ? "dailyPuzzleAttempts" : "attempts";
+      await puzzleModel.findByIdAndUpdate(id, { $push: { [updateField]: userId } });
     }
-    const isCorrect = checkResponse.data.choices[0].message.content;
+    const isCorrect = checkResponse.data.choices[0].message.content?.trim();
     let send;
     let pointsEarned = 0;
-    if (isCorrect?.trim() === "true" || isCorrect?.includes("true")) {
+    if (isCorrect === "true" || isCorrect?.includes("true")) {
       if (id) {
         await puzzleModel.findByIdAndUpdate(id, {
           $push: { successes: userId },

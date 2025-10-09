@@ -1,5 +1,10 @@
 import useApi from "@/utils/api";
-import { type LeaderboardUser, type Response, type User } from "@/utils/types";
+import {
+  type Puzzle,
+  type LeaderboardUser,
+  type Response,
+  type User,
+} from "@/utils/types";
 import { toast } from "@/utils/utils";
 import { useAuth } from "@clerk/clerk-expo";
 import { useRouter } from "expo-router";
@@ -8,12 +13,14 @@ import { createContext, useState, type ReactNode, useContext } from "react";
 type AppUserContextType = {
   userSettings: User | null;
   leaderboardUsers: LeaderboardUser[];
+  dailyPuzzle: Puzzle | null;
   fetchUserSettings: () => Promise<void>;
   changeUserSettingState: <T extends keyof User>(
     property: keyof User,
     newValue?: User[T]
   ) => void;
   fetchLeaderboardUsers: () => Promise<void>;
+  getDailyPuzzle: () => Promise<void>;
 };
 
 const AppUserContext = createContext<null | AppUserContextType>(null);
@@ -31,6 +38,7 @@ export const AppUserContextProvider = ({
   const [leaderboardUsers, setLeaderboardUsers] = useState<LeaderboardUser[]>(
     []
   );
+  const [dailyPuzzle, setDailyPuzzle] = useState<Puzzle | null>(null);
 
   const fetchUserSettings = async () => {
     try {
@@ -85,14 +93,40 @@ export const AppUserContextProvider = ({
     });
   }
 
+  const getDailyPuzzle = async () => {
+    try {
+      const response = await api.get<Response<"puzzle", { puzzle: Puzzle }>>(
+        "/puzzles/get-daily-puzzle"
+      );
+      if (response.data.success && response.data.puzzle) {
+        setDailyPuzzle(response.data.puzzle);
+        return;
+      }
+      toast(
+        "error",
+        "Fetch error",
+        "Error fetching daily puzzle. Please come back later."
+      );
+    } catch (error) {
+      console.error(error);
+      toast(
+        "error",
+        "Fetch error",
+        "Failed to fetch daily puzzle. Please come back later."
+      );
+    }
+  };
+
   return (
     <AppUserContext.Provider
       value={{
         userSettings,
         leaderboardUsers,
+        dailyPuzzle,
         fetchUserSettings,
         changeUserSettingState,
         fetchLeaderboardUsers,
+        getDailyPuzzle,
       }}
     >
       {children}

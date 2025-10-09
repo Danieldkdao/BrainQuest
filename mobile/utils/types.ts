@@ -38,6 +38,8 @@ export type Puzzle = {
   attempts: string[];
   successes: string[];
   image: Image;
+  isDaily: boolean;
+  dailyPuzzleAttempts: string[];
   createdAt: string;
 };
 

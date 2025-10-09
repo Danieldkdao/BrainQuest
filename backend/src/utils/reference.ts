@@ -167,7 +167,7 @@ export const ChallengeReference = {
     const sessions = await trainingSessionModel
       .find({ user: userId }, { pointsEarned: 1, _id: 0 })
       .sort({ pointsEarned: -1 });
-    if (sessions) {
+    if (sessions && sessions.length > 0) {
       const isCompleted = sessions[0].pointsEarned >= 1000;
       const progress = isCompleted ? 1000 : sessions[0].pointsEarned;
       if (isCompleted) {

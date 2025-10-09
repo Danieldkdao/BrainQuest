@@ -26,12 +26,14 @@ const LeaderboardPage = () => {
         contentContainerClassName="items-start justify-center pb-10"
         className="w-[90%]"
       >
-        <Text
-          className="text-3xl font-bold mb-5"
-          style={{ color: colors.text }}
-        >
-          Leaderboard
-        </Text>
+        {userSettings?.enableLeaderboard && (
+          <Text
+            className="text-3xl font-bold mb-5"
+            style={{ color: colors.text }}
+          >
+            Leaderboard
+          </Text>
+        )}
         {userSettings?.enableLeaderboard ? (
           <View className="rounded-xl overflow-hidden">
             <LinearGradient
@@ -90,7 +92,12 @@ const LeaderboardPage = () => {
               colors={colors.gradients.empty}
             >
               <Ionicons name="trophy" size={50} color={colors.textMuted} />
-              <Text className="text-xl font-bold">Leaderboard Disabled</Text>
+              <Text
+                className="text-xl font-bold"
+                style={{ color: colors.text }}
+              >
+                Leaderboard Disabled
+              </Text>
               <Text className="text-center" style={{ color: colors.textMuted }}>
                 You have disabled the leaderboard. This means that you won't be
                 on the leaderboard and you will not be able to see the
