@@ -13,7 +13,7 @@ export const keepOpen = new cron.CronJob("*/14 * * * *", () => {
     .on("error", (e) => console.error("Error while sending request: ", e));
 });
 
-export const runDaily = new cron.CronJob("30 1 * * *", async () => {
+export const runDaily = new cron.CronJob("0 0 * * *", async () => {
   try {
     console.log("ran");
     await chooseDailyChallenges();
