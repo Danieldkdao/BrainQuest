@@ -22,6 +22,7 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 await connectDB();
+keepOpen.start();
 runDaily.start();
 
 app.use(express.json());
