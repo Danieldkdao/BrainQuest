@@ -45,7 +45,7 @@ app.use("/api/badges", badgeRoute);
 app.use("/api/challenges", challengeRoute);
 
 app.get("/", async (req: Request, res: Response) => {
-  const r = await userModel.find();
+  const r = await puzzleModel.find();
   res.json(r);
 });
 

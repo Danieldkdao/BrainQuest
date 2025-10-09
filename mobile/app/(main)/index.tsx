@@ -30,7 +30,13 @@ const Home = () => {
   const { user } = useUser();
   const router = useRouter();
   const { colors } = useTheme();
-  const { fetchUserSettings, userSettings, leaderboardUsers, getDailyPuzzle, dailyPuzzle } = useAppUser();
+  const {
+    fetchUserSettings,
+    userSettings,
+    leaderboardUsers,
+    getDailyPuzzle,
+    dailyPuzzle,
+  } = useAppUser();
   const { changeSelectedTab } = usePuzzle();
 
   const [openDailyExercise, setOpenDailyExercise] = useState(false);
@@ -42,6 +48,7 @@ const Home = () => {
   });
   const [checkLoading, setCheckLoading] = useState(false);
   const [timeTaken, setTimeTaken] = useState(0);
+  const [hintUsed, setHintUsed] = useState(false);
 
   const screenWidth = Dimensions.get("window").width;
 
@@ -112,6 +119,7 @@ const Home = () => {
         answer: dailyPuzzle?.answer,
         difficulty: dailyPuzzle?.difficulty,
         category: dailyPuzzle?.category,
+        hintUsed,
         id: dailyPuzzle?._id,
         timeTaken,
         isDaily: true,
@@ -145,6 +153,7 @@ const Home = () => {
 
   const closeModal = () => {
     setOpenDailyExercise(false);
+    setHintUsed(false);
     setUserRes("");
     setResult({ isCorrect: true, text: null });
   };
@@ -346,6 +355,16 @@ const Home = () => {
                     />
                     <View
                       className="rounded-lg overflow-hidden"
+                      style={{ display: hintUsed ? "flex" : "none" }}
+                    >
+                      <LinearGradient colors={colors.gradients.empty}>
+                        <Text className="text-lg font-medium text-white py-2 px-4">
+                          {`Hint: ${dailyPuzzle.hint}`}
+                        </Text>
+                      </LinearGradient>
+                    </View>
+                    <View
+                      className="rounded-lg overflow-hidden"
                       style={{ display: result.text ? "flex" : "none" }}
                     >
                       <LinearGradient
@@ -408,7 +427,12 @@ const Home = () => {
                         )}
                       </LinearGradient>
                     </TouchableOpacity>
-                    <TouchableOpacity className="rounded-xl overflow-hidden">
+                    <TouchableOpacity
+                      disabled={hintUsed}
+                      onPress={() => setHintUsed(true)}
+                      className="rounded-xl overflow-hidden"
+                      style={{ opacity: hintUsed ? 0.6 : 1 }}
+                    >
                       <LinearGradient
                         className="py-3 flex-row items-center justify-center gap-3 w-full"
                         colors={colors.gradients.empty}

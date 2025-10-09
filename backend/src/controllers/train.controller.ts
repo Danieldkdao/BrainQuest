@@ -14,7 +14,6 @@ import userModel, {
   createNewWeekPoints,
   createNewWeekTimeSpent,
   calcDaysTillSun,
-  resetDay,
 } from "../models/user.model.js";
 import badgeModel from "../models/badge.model.js";
 import OpenAI from "openai";
@@ -25,8 +24,6 @@ import {
   ChallengeReference,
 } from "../utils/reference.js";
 import challengeModel from "../models/challenge.model.js";
-import { chooseDailyChallenges } from "./challenge.controller.js";
-import { chooseDailyPuzzle } from "./puzzle.controller.js";
 
 type QueryForLevel = {
   userId: string | null;
@@ -46,6 +43,7 @@ type CheckAnswerBody = {
   answer: string;
   difficulty: PuzzleDifficulty;
   category: PuzzleCategory;
+  hintUsed?: boolean;
   id?: string;
   timeTaken?: number;
   isDaily: boolean;
@@ -369,6 +367,7 @@ export const checkAnswer = async (
     answer,
     difficulty,
     category,
+    hintUsed,
     id,
     timeTaken,
     isDaily,
@@ -448,7 +447,7 @@ export const checkAnswer = async (
         await puzzleModel.findByIdAndUpdate(id, {
           $push: { successes: userId },
         });
-        pointsEarned = PointsReference[difficulty] * 15;
+        pointsEarned = hintUsed ? 0 : PointsReference[difficulty] * 15;
       }
       send = {
         success: true,

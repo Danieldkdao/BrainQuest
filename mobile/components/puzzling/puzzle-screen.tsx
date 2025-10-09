@@ -70,6 +70,7 @@ const PuzzleScreen = ({
   const [userRes, setUserRes] = useState("");
   const [loading, setLoading] = useState(false);
   const [noShowPrevAnswer, setNoShowPrevAnswer] = useState(false);
+  const [hintUsed, setHintUsed] = useState(false);
 
   const checkAnswer = async () => {
     setLoading(true);
@@ -87,8 +88,9 @@ const PuzzleScreen = ({
 
       if (response.data.success) {
         if (response.data.correct === true) {
-          const points =
-            PointsReference[puzzles[currentPuzzle].difficulty] * 15;
+          const points = hintUsed
+            ? 0
+            : PointsReference[puzzles[currentPuzzle].difficulty] * 15;
           setTrainingStats((prev) => ({
             ...prev,
             pointsEarned: prev.pointsEarned + points,
@@ -134,6 +136,7 @@ const PuzzleScreen = ({
 
   const next = () => {
     setNoShowPrevAnswer(false);
+    setHintUsed(false);
     const isDone = currentPuzzle + 1 === puzzles.length;
     if (isDone) {
       setPause(true);
@@ -151,6 +154,16 @@ const PuzzleScreen = ({
         source={{ uri: puzzles[currentPuzzle].image.url }}
         className="w-full h-[200px] rounded-xl"
       />
+      <View
+        className="rounded-lg overflow-hidden"
+        style={{ display: hintUsed ? "flex" : "none" }}
+      >
+        <LinearGradient colors={colors.gradients.empty}>
+          <Text className="text-lg font-medium text-white py-2 px-4">
+            {`Hint: ${puzzles[currentPuzzle].hint}`}
+          </Text>
+        </LinearGradient>
+      </View>
       <View
         className="rounded-lg overflow-hidden"
         style={{ display: noShowPrevAnswer ? "flex" : "none" }}
@@ -213,7 +226,12 @@ const PuzzleScreen = ({
           )}
         </LinearGradient>
       </TouchableOpacity>
-      <TouchableOpacity className="rounded-xl overflow-hidden">
+      <TouchableOpacity
+        disabled={hintUsed}
+        onPress={() => setHintUsed(true)}
+        className="rounded-xl overflow-hidden"
+        style={{ opacity: hintUsed ? 0.6 : 1 }}
+      >
         <LinearGradient
           className="py-3 flex-row items-center justify-center gap-3 w-full"
           colors={colors.gradients.empty}

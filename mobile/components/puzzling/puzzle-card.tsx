@@ -49,6 +49,7 @@ const PuzzleCard = ({ item, width }: PuzzleCardProps) => {
   });
   const [loading, setLoading] = useState(false);
   const [timeTaken, setTimeTaken] = useState(0);
+  const [hintUsed, setHintUsed] = useState(false);
 
   useEffect(() => {
     if (!showPuzzleModal) return;
@@ -208,6 +209,7 @@ const PuzzleCard = ({ item, width }: PuzzleCardProps) => {
         answer: item.answer,
         difficulty: item.difficulty,
         category: item.category,
+        hintUsed,
         id: item._id,
         timeTaken,
       });
@@ -240,6 +242,7 @@ const PuzzleCard = ({ item, width }: PuzzleCardProps) => {
 
   const closeModal = () => {
     setShowPuzzleModal(false);
+    setHintUsed(false);
     setUserRes("");
     setResult({ isCorrect: true, text: null });
   };
@@ -279,6 +282,16 @@ const PuzzleCard = ({ item, width }: PuzzleCardProps) => {
               source={{ uri: item.image.url }}
               className="w-full h-[200px] rounded-xl"
             />
+            <View
+              className="rounded-lg overflow-hidden"
+              style={{ display: hintUsed ? "flex" : "none" }}
+            >
+              <LinearGradient colors={colors.gradients.empty}>
+                <Text className="text-lg font-medium text-white py-2 px-4">
+                  {`Hint: ${item.hint}`}
+                </Text>
+              </LinearGradient>
+            </View>
             <View
               className="rounded-lg overflow-hidden"
               style={{ display: result.text ? "flex" : "none" }}
@@ -340,7 +353,12 @@ const PuzzleCard = ({ item, width }: PuzzleCardProps) => {
                 )}
               </LinearGradient>
             </TouchableOpacity>
-            <TouchableOpacity className="rounded-xl overflow-hidden">
+            <TouchableOpacity
+              disabled={hintUsed}
+              onPress={() => setHintUsed(true)}
+              className="rounded-xl overflow-hidden"
+              style={{ opacity: hintUsed ? 0.6 : 1 }}
+            >
               <LinearGradient
                 className="py-3 flex-row items-center justify-center gap-3 w-full"
                 colors={colors.gradients.empty}

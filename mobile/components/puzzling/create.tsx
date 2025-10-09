@@ -27,6 +27,7 @@ import { categories, difficulties, toast } from "@/utils/utils";
 type InputFieldsType = {
   puzzle: string;
   answer: string;
+  hint: string;
   category: PuzzleCategory;
   difficulty: PuzzleDifficulty;
   image: string | null;
@@ -42,6 +43,7 @@ const CreatePage = () => {
   const [inputFields, setInputFields] = useState<InputFieldsType>({
     puzzle: "",
     answer: "",
+    hint: "",
     category: "logic",
     difficulty: "easy",
     image: null,
@@ -106,6 +108,7 @@ const CreatePage = () => {
       if (
         inputFields.puzzle.trim() === "" ||
         inputFields.answer.trim() === "" ||
+        inputFields.hint.trim() === "" ||
         !imageDataUrl
       ) {
         toast("error", "Missing Information", "All fields must be filled out.");
@@ -114,6 +117,7 @@ const CreatePage = () => {
       const body = {
         question: inputFields.puzzle,
         answer: inputFields.answer,
+        hint: inputFields.hint,
         category: inputFields.category,
         difficulty: inputFields.difficulty,
         image: imageDataUrl,
@@ -136,6 +140,7 @@ const CreatePage = () => {
         setInputFields({
           puzzle: "",
           answer: "",
+          hint: "",
           category: "logic",
           difficulty: "easy",
           image: null,
@@ -213,6 +218,25 @@ const CreatePage = () => {
               setInputFields((prev) => ({ ...prev, answer: text }))
             }
             placeholder="Enter the puzzle answer here"
+            placeholderTextColor={colors.textMuted}
+            multiline
+            textAlignVertical="top"
+            className="border-2 px-4 h-28 rounded-xl text-lg"
+            style={{
+              color: colors.text,
+              borderColor: colors.border,
+              backgroundColor: colors.surface,
+            }}
+          />
+          <Text className="text-xl font-medium" style={{ color: colors.text }}>
+            Hint
+          </Text>
+          <TextInput
+            value={inputFields.hint}
+            onChangeText={(text) =>
+              setInputFields((prev) => ({ ...prev, hint: text }))
+            }
+            placeholder="Enter the puzzle hint here"
             placeholderTextColor={colors.textMuted}
             multiline
             textAlignVertical="top"

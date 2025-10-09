@@ -15,7 +15,6 @@ export const keepOpen = new cron.CronJob("*/14 * * * *", () => {
 
 export const runDaily = new cron.CronJob("0 0 * * *", async () => {
   try {
-    console.log("ran");
     await chooseDailyChallenges();
     await chooseDailyPuzzle();
     await userModel.updateMany({}, { $set: { todayStats: defaultData3 } });

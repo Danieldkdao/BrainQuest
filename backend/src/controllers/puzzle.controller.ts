@@ -21,6 +21,7 @@ export const chooseDailyPuzzle = async () => {
 type CreateType = {
   question: string;
   answer: string;
+  hint: string;
   category: PuzzleCategory;
   difficulty: PuzzleDifficulty;
   image: string;
@@ -43,11 +44,12 @@ export const createPuzzle = async (
   res: Response
 ) => {
   try {
-    const { question, answer, category, difficulty, image, creator } = req.body;
+    const { question, answer, hint, category, difficulty, image, creator } = req.body;
     const result = await cloudinary.uploader.upload(image);
     const newPuzzle = new puzzleModel({
       question,
       answer,
+      hint,
       category,
       difficulty,
       image: {

@@ -42,6 +42,7 @@ export interface IPuzzle extends Document {
   image: Image;
   isDaily: boolean;
   dailyPuzzleAttempts: string[];
+  hint: string;
   createdAt: Date;
 }
 
@@ -79,6 +80,7 @@ const PuzzleSchema = new Schema<IPuzzle>(
     },
     isDaily: { type: Boolean, default: false },
     dailyPuzzleAttempts: { type: [String], default: [] },
+    hint: { type: String, required: true },
   },
   { timestamps: true }
 );

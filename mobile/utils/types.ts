@@ -40,6 +40,7 @@ export type Puzzle = {
   image: Image;
   isDaily: boolean;
   dailyPuzzleAttempts: string[];
+  hint: string;
   createdAt: string;
 };
 
