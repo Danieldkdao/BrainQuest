@@ -26,6 +26,8 @@ type PuzzleScreenProps = {
   currentPuzzle: number;
   timeOnCurrentPuzzle: number;
   pause: boolean;
+  answerAfterPuzzle: boolean;
+  hints: boolean;
   setCurrentPuzzle: React.Dispatch<React.SetStateAction<number>>;
   setPause: React.Dispatch<React.SetStateAction<boolean>>;
   setTrainingStats: React.Dispatch<React.SetStateAction<TrainingStatsType>>;
@@ -46,6 +48,8 @@ const PuzzleScreen = ({
   currentPuzzle,
   timeOnCurrentPuzzle,
   pause,
+  answerAfterPuzzle,
+  hints,
   setCurrentPuzzle,
   setPause,
   setTrainingStats,
@@ -176,7 +180,11 @@ const PuzzleScreen = ({
           }
         >
           <Text className="text-lg font-medium text-white py-2 px-4">
-            {isCorrect.text}
+            {answerAfterPuzzle
+              ? isCorrect.text
+              : isCorrect.isCorrect
+                ? "Correct!"
+                : "Sorry, incorrect..."}
           </Text>
         </LinearGradient>
       </View>
@@ -226,25 +234,29 @@ const PuzzleScreen = ({
           )}
         </LinearGradient>
       </TouchableOpacity>
-      <TouchableOpacity
-        disabled={hintUsed}
-        onPress={() => setHintUsed(true)}
-        className="rounded-xl overflow-hidden"
-        style={{ opacity: hintUsed ? 0.6 : 1 }}
-      >
-        <LinearGradient
-          className="py-3 flex-row items-center justify-center gap-3 w-full"
-          colors={colors.gradients.empty}
+      {hints ? (
+        <TouchableOpacity
+          disabled={hintUsed}
+          onPress={() => setHintUsed(true)}
+          className="rounded-xl overflow-hidden"
+          style={{ opacity: hintUsed ? 0.6 : 1 }}
         >
-          <Ionicons name="bulb" size={25} color={colors.text} />
-          <Text
-            className="text-center text-xl font-bold"
-            style={{ color: colors.text }}
+          <LinearGradient
+            className="py-3 flex-row items-center justify-center gap-3 w-full"
+            colors={colors.gradients.empty}
           >
-            Hint
-          </Text>
-        </LinearGradient>
-      </TouchableOpacity>
+            <Ionicons name="bulb" size={25} color={colors.text} />
+            <Text
+              className="text-center text-xl font-bold"
+              style={{ color: colors.text }}
+            >
+              Hint
+            </Text>
+          </LinearGradient>
+        </TouchableOpacity>
+      ) : (
+        <></>
+      )}
     </ScrollView>
   );
 };

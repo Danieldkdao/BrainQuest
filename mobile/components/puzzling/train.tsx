@@ -591,6 +591,8 @@ const TrainPage = () => {
             currentPuzzle={currentPuzzle}
             timeOnCurrentPuzzle={timeOnCurrentPuzzle}
             pause={pause}
+            answerAfterPuzzle={settings.answerAfterPuzzle}
+            hints={settings.hints}
             setCurrentPuzzle={setCurrentPuzzle}
             setPause={setPause}
             setTrainingStats={setTrainingStats}
