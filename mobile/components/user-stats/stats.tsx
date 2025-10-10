@@ -85,6 +85,9 @@ const StatsPage = () => {
   const incorrectPuzzlesToday = userSettings?.todayStats.puzzles.incorrect
     ? userSettings.todayStats.puzzles.incorrect
     : 0;
+  const pointsEarnedToday = userSettings?.todayStats.points
+    ? userSettings.todayStats.points
+    : 0;
 
   return (
     <View
@@ -108,7 +111,13 @@ const StatsPage = () => {
           >
             Activity Today
           </Text>
-          <View>
+          <View className="gap-2">
+            <Text
+              className="text-xl font-bold text-center"
+              style={{ color: colors.text }}
+            >
+              Puzzles
+            </Text>
             <View className="flex-row gap-2 w-full">
               <View className="rounded-xl overflow-hidden flex-1">
                 <LinearGradient
@@ -147,6 +156,117 @@ const StatsPage = () => {
                     {incorrectPuzzlesToday}
                   </Text>
                 </LinearGradient>
+              </View>
+            </View>
+          </View>
+          <View className="gap-2">
+            <Text
+              className="text-xl font-bold text-center"
+              style={{ color: colors.text }}
+            >
+              Points Earned
+            </Text>
+            <View>
+              <View className="rounded-xl overflow-hidden w-full">
+                <LinearGradient
+                  colors={colors.gradients.empty}
+                  className="p-2 items-center"
+                >
+                  <Text
+                    className="text-3xl font-bold"
+                    style={{ color: colors.text }}
+                  >
+                    {pointsEarnedToday}
+                  </Text>
+                </LinearGradient>
+              </View>
+            </View>
+          </View>
+          <View className="gap-2 items-center">
+            <Text
+              className="text-xl font-medium"
+              style={{ color: colors.text }}
+            >
+              Time Spent
+            </Text>
+            <View className="flex-row gap-2">
+              <View className="items-center">
+                <View className="rounded-lg overflow-hidden">
+                  <LinearGradient
+                    colors={colors.gradients.empty}
+                    className="p-2"
+                  >
+                    <Text
+                      className="text-2xl font-medium"
+                      style={{ color: colors.text }}
+                    >
+                      {String(Math.floor(timeSpentToday / 3600)).padStart(
+                        2,
+                        "0"
+                      )}
+                    </Text>
+                  </LinearGradient>
+                </View>
+                <Text
+                  className="font-medium"
+                  style={{ color: colors.textMuted }}
+                >
+                  Hrs
+                </Text>
+              </View>
+              <Text
+                className="text-xl font-bold pt-2"
+                style={{ color: colors.text }}
+              >
+                :
+              </Text>
+              <View className="items-center">
+                <View className="rounded-lg overflow-hidden">
+                  <LinearGradient
+                    colors={colors.gradients.empty}
+                    className="p-2"
+                  >
+                    <Text
+                      className="text-2xl font-medium"
+                      style={{ color: colors.text }}
+                    >
+                      {String(calcMins(timeSpentToday)).padStart(2, "0")}
+                    </Text>
+                  </LinearGradient>
+                </View>
+                <Text
+                  className="font-medium"
+                  style={{ color: colors.textMuted }}
+                >
+                  Min
+                </Text>
+              </View>
+              <Text
+                className="text-xl font-bold pt-2"
+                style={{ color: colors.text }}
+              >
+                :
+              </Text>
+              <View className="items-center">
+                <View className="rounded-lg overflow-hidden">
+                  <LinearGradient
+                    colors={colors.gradients.empty}
+                    className="p-2"
+                  >
+                    <Text
+                      className="text-2xl font-medium"
+                      style={{ color: colors.text }}
+                    >
+                      {String(calcSeconds(timeSpentToday)).padStart(2, "0")}
+                    </Text>
+                  </LinearGradient>
+                </View>
+                <Text
+                  className="font-medium"
+                  style={{ color: colors.textMuted }}
+                >
+                  Sec
+                </Text>
               </View>
             </View>
           </View>
@@ -384,201 +504,6 @@ const StatsPage = () => {
                 >
                   Sec
                 </Text>
-              </View>
-            </View>
-          </View>
-        </View>
-        <View
-          className="border-2 rounded-xl p-5 gap-3 w-full"
-          style={{
-            backgroundColor: colors.surface,
-            borderColor: colors.border,
-          }}
-        >
-          <Text
-            className="text-2xl font-bold text-center"
-            style={{ color: colors.text }}
-          >
-            Time Spent
-          </Text>
-          <View className="gap-4">
-            <View className="items-center gap-2">
-              <Text
-                className="text-xl font-medium"
-                style={{ color: colors.text }}
-              >
-                Today
-              </Text>
-              <View className="flex-row gap-2">
-                <View className="items-center">
-                  <View className="rounded-lg overflow-hidden">
-                    <LinearGradient
-                      colors={colors.gradients.empty}
-                      className="p-2"
-                    >
-                      <Text
-                        className="text-2xl font-medium"
-                        style={{ color: colors.text }}
-                      >
-                        {String(Math.floor(timeSpentToday / 3600)).padStart(
-                          2,
-                          "0"
-                        )}
-                      </Text>
-                    </LinearGradient>
-                  </View>
-                  <Text
-                    className="font-medium"
-                    style={{ color: colors.textMuted }}
-                  >
-                    Hrs
-                  </Text>
-                </View>
-                <Text
-                  className="text-xl font-bold pt-2"
-                  style={{ color: colors.text }}
-                >
-                  :
-                </Text>
-                <View className="items-center">
-                  <View className="rounded-lg overflow-hidden">
-                    <LinearGradient
-                      colors={colors.gradients.empty}
-                      className="p-2"
-                    >
-                      <Text
-                        className="text-2xl font-medium"
-                        style={{ color: colors.text }}
-                      >
-                        {String(calcMins(timeSpentToday)).padStart(2, "0")}
-                      </Text>
-                    </LinearGradient>
-                  </View>
-                  <Text
-                    className="font-medium"
-                    style={{ color: colors.textMuted }}
-                  >
-                    Min
-                  </Text>
-                </View>
-                <Text
-                  className="text-xl font-bold pt-2"
-                  style={{ color: colors.text }}
-                >
-                  :
-                </Text>
-                <View className="items-center">
-                  <View className="rounded-lg overflow-hidden">
-                    <LinearGradient
-                      colors={colors.gradients.empty}
-                      className="p-2"
-                    >
-                      <Text
-                        className="text-2xl font-medium"
-                        style={{ color: colors.text }}
-                      >
-                        {String(calcSeconds(timeSpentToday)).padStart(2, "0")}
-                      </Text>
-                    </LinearGradient>
-                  </View>
-                  <Text
-                    className="font-medium"
-                    style={{ color: colors.textMuted }}
-                  >
-                    Sec
-                  </Text>
-                </View>
-              </View>
-            </View>
-            <View className="items-center gap-2">
-              <Text
-                className="text-xl font-medium"
-                style={{ color: colors.text }}
-              >
-                This Week
-              </Text>
-              <View className="flex-row gap-2">
-                <View className="items-center">
-                  <View className="rounded-lg overflow-hidden">
-                    <LinearGradient
-                      colors={colors.gradients.empty}
-                      className="p-2"
-                    >
-                      <Text
-                        className="text-2xl font-medium"
-                        style={{ color: colors.text }}
-                      >
-                        {String(Math.floor(timeSpentThisWeek / 3600)).padStart(
-                          2,
-                          "0"
-                        )}
-                      </Text>
-                    </LinearGradient>
-                  </View>
-                  <Text
-                    className="font-medium"
-                    style={{ color: colors.textMuted }}
-                  >
-                    Hrs
-                  </Text>
-                </View>
-                <Text
-                  className="text-xl font-bold pt-2"
-                  style={{ color: colors.text }}
-                >
-                  :
-                </Text>
-                <View className="items-center">
-                  <View className="rounded-lg overflow-hidden">
-                    <LinearGradient
-                      colors={colors.gradients.empty}
-                      className="p-2"
-                    >
-                      <Text
-                        className="text-2xl font-medium"
-                        style={{ color: colors.text }}
-                      >
-                        {String(calcMins(timeSpentThisWeek)).padStart(2, "0")}
-                      </Text>
-                    </LinearGradient>
-                  </View>
-                  <Text
-                    className="font-medium"
-                    style={{ color: colors.textMuted }}
-                  >
-                    Min
-                  </Text>
-                </View>
-                <Text
-                  className="text-xl font-bold pt-2"
-                  style={{ color: colors.text }}
-                >
-                  :
-                </Text>
-                <View className="items-center">
-                  <View className="rounded-lg overflow-hidden">
-                    <LinearGradient
-                      colors={colors.gradients.empty}
-                      className="p-2"
-                    >
-                      <Text
-                        className="text-2xl font-medium"
-                        style={{ color: colors.text }}
-                      >
-                        {String(calcSeconds(timeSpentThisWeek)).padStart(
-                          2,
-                          "0"
-                        )}
-                      </Text>
-                    </LinearGradient>
-                  </View>
-                  <Text
-                    className="font-medium"
-                    style={{ color: colors.textMuted }}
-                  >
-                    Sec
-                  </Text>
-                </View>
               </View>
             </View>
           </View>
