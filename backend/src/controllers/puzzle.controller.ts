@@ -7,17 +7,6 @@ import puzzleModel, {
 import cloudinary, { deleteImage } from "../config/cloudinary.js";
 import { getAuth } from "@clerk/express";
 
-export const chooseDailyPuzzle = async () => {
-  await puzzleModel.updateMany({}, { $set: { isDaily: false } });
-  const randomPuzzle = await puzzleModel.aggregate([
-    { $sample: { size: 1 } },
-    { $project: { _id: 1 } },
-  ]);
-  if (!randomPuzzle || randomPuzzle.length === 0) return;
-  const puzzleId = randomPuzzle[0]._id;
-  await puzzleModel.updateOne({ _id: puzzleId }, { $set: { isDaily: true } });
-};
-
 type CreateType = {
   question: string;
   answer: string;
@@ -37,6 +26,19 @@ type PostCommentType = {
   name: string;
   profileImage: string;
   content: string;
+};
+
+const getGlobalDailyPuzzle = (puzzles: IPuzzle[]) => {
+  const epochDate = new Date("2025-01-01T00:00:00Z");
+  const now = new Date();
+
+  const millisecondsPerDay = 1000 * 24 * 60 * 60;
+  const daysSinceEpoch = Math.floor(
+    (now.getTime() - epochDate.getTime()) / millisecondsPerDay
+  );
+
+  const puzzleIndex = daysSinceEpoch % puzzles.length;
+  return puzzles[puzzleIndex];
 };
 
 export const createPuzzle = async (
@@ -268,13 +270,14 @@ export const getScrollPuzzles = async (
 
 export const getDailyPuzzle = async (req: Request, res: Response) => {
   try {
-    const puzzle = await puzzleModel.findOne({ isDaily: true });
-    if (!puzzle)
+    const puzzles = await puzzleModel.find().sort({createdAt: 1, _id: 1});
+    if (!puzzles || puzzles.length === 0)
       return res.json({ success: false, message: "No daily puzzle found." });
+    const dailyPuzzle = getGlobalDailyPuzzle(puzzles);
     res.json({
       success: true,
       message: "Daily puzzle fetched successfully!",
-      puzzle,
+      dailyPuzzle,
     });
   } catch (error) {
     console.error(error);

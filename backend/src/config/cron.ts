@@ -1,8 +1,21 @@
 import cron from "cron";
 import https from "https";
-import { chooseDailyChallenges } from "../controllers/challenge.controller.js";
-import { chooseDailyPuzzle } from "../controllers/puzzle.controller.js";
+import { startOfDay } from "date-fns";
+import { fromZonedTime } from "date-fns-tz";
+import { resetDailyChallenges } from "../controllers/challenge.controller.js";
 import userModel, { defaultData3 } from "../models/user.model.js";
+
+const getCurrentHourInTimezone = (tz: string) => {
+  const now = new Date();
+  const hourString = now.toLocaleString("en-US", {
+    hour: "2-digit",
+    hour12: false,
+    timeZone: tz,
+  });
+
+  const hour = parseInt(hourString);
+  return hour === 24 ? 0 : hour;
+};
 
 export const keepOpen = new cron.CronJob("*/14 * * * *", () => {
   https
@@ -13,12 +26,29 @@ export const keepOpen = new cron.CronJob("*/14 * * * *", () => {
     .on("error", (e) => console.error("Error while sending request: ", e));
 });
 
-export const runDaily = new cron.CronJob("0 0 * * *", async () => {
+export const runDaily = new cron.CronJob("0 * * * *", async () => {
   try {
-    await chooseDailyChallenges();
-    await chooseDailyPuzzle();
-    await userModel.updateMany({}, { $set: { todayStats: defaultData3 } });
+    const timezones = await userModel.distinct("checkNewDay.timezone");
+    for (const tz of timezones) {
+      const currentHour = getCurrentHourInTimezone(tz);
+      if (currentHour === 0) {
+        await resetDailyChallenges(tz);
+        const startOfToday = fromZonedTime(startOfDay(new Date()), tz);
+        await userModel.updateMany(
+          {
+            "checkNewDay.timezone": tz,
+            "checkNewDay.lastChecked": { $lt: startOfToday },
+          },
+          {
+            $set: {
+              todayStats: defaultData3,
+              "checkNewDay.lastChecked": Date.now(),
+            },
+          }
+        );
+      }
+    }
   } catch (error) {
-    console.error(error);
+    console.error("Error in hourly cron job: ", error);
   }
 });

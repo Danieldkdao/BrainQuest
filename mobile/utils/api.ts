@@ -2,12 +2,18 @@ import { useAuth } from "@clerk/clerk-expo";
 import axios from "axios";
 import { useMemo } from "react";
 
+const dev = true;
+
+const baseURL = dev
+  ? "http://10.0.2.2:5000/api"
+  : "https://brainquest-jckj.onrender.com/api";
+
 const useApi = () => {
   const { getToken, isSignedIn } = useAuth();
 
   const api = useMemo(() => {
     const instance = axios.create({
-      baseURL: "http://10.0.2.2:5000/api",
+      baseURL,
     });
 
     instance.interceptors.request.use(async (config) => {

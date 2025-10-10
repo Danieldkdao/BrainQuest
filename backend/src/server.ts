@@ -14,8 +14,6 @@ import trainingSessionModel from "./models/training-session.model.js";
 import userModel, { createNewWeekPuzzles } from "./models/user.model.js";
 import badgeModel from "./models/badge.model.js";
 import challengeModel from "./models/challenge.model.js";
-import { chooseDailyChallenges } from "./controllers/challenge.controller.js";
-import { chooseDailyPuzzle } from "./controllers/puzzle.controller.js";
 
 dotenv.config();
 const app = express();

@@ -1,22 +1,17 @@
 import { type Request, type Response } from "express";
 import challengeModel from "../models/challenge.model.js";
 
-export const chooseDailyChallenges = async () => {
+export const resetDailyChallenges = async (tz: string) => {
   try {
     await challengeModel.updateMany(
       {},
       {
-        $set: { isDaily: false, isComplete: false, usersComplete: [] },
-      }
-    );
-    const getIds = await challengeModel.aggregate([
-      { $sample: { size: 5 } },
-      { $project: { _id: 1 } },
-    ]);
-    const randomIds = getIds.map((item) => item._id);
-    await challengeModel.updateMany(
-      { _id: { $in: randomIds } },
-      { $set: { isDaily: true } }
+        $set: {
+          "usersComplete.$[elem].progress": 0,
+          "usersComplete.$[elem].isCompleted": false,
+        },
+      },
+      { arrayFilters: [{ "elem.timezone": tz }] }
     );
   } catch (error) {
     console.error(error);
@@ -25,7 +20,7 @@ export const chooseDailyChallenges = async () => {
 
 export const getDailyChallenges = async (req: Request, res: Response) => {
   try {
-    const challenges = await challengeModel.find({ isDaily: true });
+    const challenges = await challengeModel.find();
     res.json({
       success: true,
       message: "Challenges fetched successfully!",

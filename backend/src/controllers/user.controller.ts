@@ -1,12 +1,7 @@
 import { getAuth } from "@clerk/express";
 import { type Request, type Response } from "express";
-import userModel, {
-  defaultData3,
-  type LevelType,
-} from "../models/user.model.js";
-import { chooseDailyChallenges } from "./challenge.controller.js";
+import userModel, { type LevelType } from "../models/user.model.js";
 import { addNewWeeks } from "./train.controller.js";
-import { chooseDailyPuzzle } from "./puzzle.controller.js";
 
 export const Levels: LevelType[] = [
   {
@@ -92,20 +87,26 @@ export const Levels: LevelType[] = [
 ];
 
 export const addUserToDB = async (
-  req: Request<{}, {}, { name: string }>,
+  req: Request<{}, {}, { name: string; timezone: string }>,
   res: Response
 ) => {
   try {
     const { userId } = getAuth(req);
-    const { name } = req.body;
+    const { name, timezone } = req.body;
     if (!userId)
       return res.json({ success: false, message: "User not logged in." });
-    const user = await userModel.findOne({ userId });
+    const user = await userModel.findOneAndUpdate(
+      { userId },
+      { "checkNewDay.timezone": timezone }
+    );
     if (user)
       return res.json({ success: false, message: "User already exists." });
     const newUser = new userModel({
       userId,
       name,
+      checkNewDay: {
+        timezone,
+      },
     });
     await newUser.save();
     res.json({ success: true, message: "New user added successfully!" });

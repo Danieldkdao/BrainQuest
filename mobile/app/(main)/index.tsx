@@ -82,9 +82,11 @@ const Home = () => {
   };
 
   const addUserToDB = async () => {
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
     try {
-      const response = await api.post<Response>("/users/add-user-db", {
+      await api.post<Response>("/users/add-user-db", {
         name: user?.fullName,
+        timezone,
       });
     } catch (error) {
       console.error(error);
@@ -448,32 +450,49 @@ const Home = () => {
                     </TouchableOpacity>
                   </ScrollView>
                 ) : (
-                  <View className="rounded-xl overflow-hidden">
-                    <LinearGradient
-                      colors={colors.gradients.danger}
-                      className="gap-2 p-5"
-                    >
-                      <Ionicons
-                        name="close-circle"
-                        size={50}
-                        color={colors.text}
-                      />
+                  <View className="gap-4">
+                    <View className="w-full flex-row items-center justify-between">
                       <Text
                         className="text-3xl font-bold"
                         style={{ color: colors.text }}
                       >
-                        Error
+                        Daily Puzzle
                       </Text>
-                      <Text
-                        className="text-xl font-medium"
-                        style={{ color: colors.textMuted }}
+                      <TouchableOpacity onPress={closeModal}>
+                        <Ionicons
+                          name="close-circle"
+                          color={colors.text}
+                          size={48}
+                        />
+                      </TouchableOpacity>
+                    </View>
+                    <View className="rounded-xl overflow-hidden">
+                      <LinearGradient
+                        colors={colors.gradients.danger}
+                        className="gap-2 p-5 items-center"
                       >
-                        We are currently experiencing issues and are unable to
-                        fetch this puzzle. If you can, try the other features in
-                        the meantime while we get this fixed. Otherwise come
-                        back later.
-                      </Text>
-                    </LinearGradient>
+                        <Ionicons
+                          name="close-circle"
+                          size={50}
+                          color={colors.text}
+                        />
+                        <Text
+                          className="text-3xl font-bold text-center"
+                          style={{ color: colors.text }}
+                        >
+                          Error
+                        </Text>
+                        <Text
+                          className="text-xl font-medium text-center"
+                          style={{ color: colors.text }}
+                        >
+                          We are currently experiencing issues and are unable to
+                          fetch this puzzle. If you can, try the other features
+                          in the meantime while we get this fixed. Otherwise
+                          come back later.
+                        </Text>
+                      </LinearGradient>
+                    </View>
                   </View>
                 )}
               </View>

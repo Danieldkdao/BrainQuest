@@ -43,6 +43,9 @@ const checkUserPrevComplete = async (
 
 type CategoriesToday = {
   todayStats: Pick<TodayStats, "categories">;
+  checkNewDay: {
+    timezone: string;
+  };
 };
 
 export const PointsReference = {
@@ -128,7 +131,7 @@ export const ChallengeReference = {
     if (prevComplete) return;
     const categoriesToday: CategoriesToday | null = await userModel.findOne(
       { userId },
-      { "todayStats.categories": 1, _id: 0 }
+      { "todayStats.categories": 1, "checkNewDay.timezone": 1, _id: 0 }
     );
     const lateralThinkingPuzzles =
       categoriesToday?.todayStats.categories.lateral.correct;
@@ -150,6 +153,7 @@ export const ChallengeReference = {
           user: userId,
           progress,
           isCompleted,
+          timezone: categoriesToday.checkNewDay.timezone,
         };
         await challengeModel.updateOne(
           {
@@ -164,6 +168,10 @@ export const ChallengeReference = {
   power_session: async (userId: string | null) => {
     const prevComplete = await checkUserPrevComplete("power_session", userId);
     if (prevComplete) return;
+    const user: Pick<CategoriesToday, "checkNewDay"> | null = await userModel.findOne(
+      { userId },
+      { "checkNewDay.timezone": 1, _id: 0 }
+    );
     const sessions = await trainingSessionModel
       .find({ user: userId }, { pointsEarned: 1, _id: 0 })
       .sort({ pointsEarned: -1 });
@@ -180,11 +188,13 @@ export const ChallengeReference = {
           "usersComplete.$.isCompleted": isCompleted,
         }
       );
+      const timezone = user ? user.checkNewDay.timezone : "UTC";
       if (result.modifiedCount === 0) {
         const newUser = {
           user: userId,
           progress,
           isCompleted,
+          timezone,
         };
         await challengeModel.updateOne(
           {

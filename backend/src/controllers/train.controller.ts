@@ -266,9 +266,12 @@ const updateUser = async (
   timeSpent: number,
   categories: CategoryArrayItemSave[]
 ) => {
+  const user = await userModel.findOne({ userId }, { "checkNewDay.timezone": 1, _id: 0 });
+  if(!user) return;
+  const timezone = user.checkNewDay.timezone;
   const numDate = Date.now();
   const date = new Date(numDate);
-  const day = date.toLocaleDateString("en-US", { weekday: "short" });
+  const day = date.toLocaleDateString("en-US", { weekday: "short", timeZone: timezone });
   console.log(day);
   try {
     const user: Pick<IUser, "weekPuzzles" | "_id" | "lastLogged"> | null =

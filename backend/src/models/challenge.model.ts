@@ -4,6 +4,7 @@ export type UserProgress = {
   user: string | null;
   progress: number;
   isCompleted: boolean;
+  timezone: string;
 };
 
 export interface IChallenge extends Document {
@@ -21,6 +22,7 @@ const UsersCompleteSchema = new Schema<UserProgress>(
     user: { type: String, required: true },
     progress: { type: Number, required: true },
     isCompleted: { type: Boolean, required: true },
+    timezone: { type: String, required: true },
   },
   { _id: false }
 );
@@ -30,7 +32,6 @@ const ChallengeSchema = new Schema<IChallenge>({
   task: { type: String, required: true, unique: true },
   reward: { type: Number, required: true },
   final: { type: Number, required: true },
-  isDaily: { type: Boolean, required: true },
   condition: { type: String, required: true, unique: true },
   usersComplete: { type: [UsersCompleteSchema], default: [] }
 });

@@ -95,11 +95,11 @@ export const AppUserContextProvider = ({
 
   const getDailyPuzzle = async () => {
     try {
-      const response = await api.get<Response<"puzzle", { puzzle: Puzzle }>>(
+      const response = await api.get<Response<"dailyPuzzle", { dailyPuzzle: Puzzle }>>(
         "/puzzles/get-daily-puzzle"
       );
-      if (response.data.success && response.data.puzzle) {
-        setDailyPuzzle(response.data.puzzle);
+      if (response.data.success && response.data.dailyPuzzle) {
+        setDailyPuzzle(response.data.dailyPuzzle);
         return;
       }
       toast(

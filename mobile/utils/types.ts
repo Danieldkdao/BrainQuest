@@ -74,6 +74,11 @@ export type PuzzleCategoryData = {
   timeSpent: number;
 };
 
+export type CheckNewDay = {
+  timezone: string;
+  lastChecked: number;
+};
+
 export type PuzzlesCompleted = {
   correct: number;
   incorrect: number;
@@ -154,10 +159,7 @@ export type User = {
   enableLeaderboard: boolean;
   puzzleGoal: number;
   pointsGoal: number;
-  puzzles: {
-    correct: number,
-    incorrect: number,
-  };
+  puzzles: PuzzlesCompleted;
   points: number;
   timeSpent: number;
   badgesEarned: string[];
@@ -169,6 +171,7 @@ export type User = {
   weekPoints: Weekly2[];
   weekTimeSpent: Weekly2[];
   puzzleCategoryData: PuzzleCategoryData[];
+  checkNewDay: CheckNewDay;
 };
 
 export type Badge = {

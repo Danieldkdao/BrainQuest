@@ -62,6 +62,11 @@ export const calcDaysTillSun = (d: number) => {
   return Date.now() + daysTill * 24 * 60 * 60 * 1000;
 };
 
+export type CheckNewDay = {
+  timezone: string;
+  lastChecked: number;
+}
+
 export type PuzzlesCompleted = {
   correct: number;
   incorrect: number;
@@ -138,6 +143,7 @@ export interface IUser extends Document {
   weekPoints: Weekly[];
   weekTimeSpent: Weekly[];
   puzzleCategoryData: PuzzleCategoryData[];
+  checkNewDay: CheckNewDay;
 }
 
 export const defaultData: BarChartData[] = [
@@ -529,6 +535,10 @@ const UserSchema = new Schema<IUser>({
     type: [PuzzleCategoryDataSchema],
     default: defaultData2,
   },
+  checkNewDay: {
+    timezone: { type: String, required: true },
+    lastChecked: { type: Number, default: Date.now },
+  }
 });
 
 const userModel: Model<IUser> =
