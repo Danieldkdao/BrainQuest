@@ -7,7 +7,7 @@ const useApi = () => {
 
   const api = useMemo(() => {
     const instance = axios.create({
-      baseURL: "https://brainquest-jckj.onrender.com/api",
+      baseURL: "http://10.0.2.2:5000/api",
     });
 
     instance.interceptors.request.use(async (config) => {
