@@ -2,7 +2,7 @@ import { useAuth } from "@clerk/clerk-expo";
 import axios from "axios";
 import { useMemo } from "react";
 
-const dev = true;
+const dev = false;
 
 const baseURL = dev
   ? "http://10.0.2.2:5000/api"
