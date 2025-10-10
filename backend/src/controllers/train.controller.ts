@@ -447,7 +447,7 @@ export const checkAnswer = async (
         await puzzleModel.findByIdAndUpdate(id, {
           $push: { successes: userId },
         });
-        pointsEarned = hintUsed ? 0 : PointsReference[difficulty] * 15;
+        pointsEarned = PointsReference[difficulty] * (hintUsed ? 5 : 15);
       }
       send = {
         success: true,

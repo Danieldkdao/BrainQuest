@@ -74,6 +74,11 @@ export type PuzzleCategoryData = {
   timeSpent: number;
 };
 
+export type PuzzlesCompleted = {
+  correct: number;
+  incorrect: number;
+};
+
 export type CategoryArrayItemSave = {
   category: PuzzleCategory;
   isCorrect: boolean;
@@ -81,20 +86,17 @@ export type CategoryArrayItemSave = {
 };
 
 export type TodayStats = {
-  puzzles: {
-    correct: number;
-    incorrect: number;
-  };
+  puzzles: PuzzlesCompleted;
   points: number;
   timeSpent: number;
   categories: {
-    logic: number;
-    math: number;
-    wordplay: number;
-    lateral: number;
-    patterns: number;
-    classic: number;
-    trivia: number;
+    logic: PuzzlesCompleted;
+    math: PuzzlesCompleted;
+    wordplay: PuzzlesCompleted;
+    lateral: PuzzlesCompleted;
+    patterns: PuzzlesCompleted;
+    classic: PuzzlesCompleted;
+    trivia: PuzzlesCompleted;
   };
 };
 

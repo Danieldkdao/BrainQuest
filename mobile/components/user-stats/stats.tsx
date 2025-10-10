@@ -60,14 +60,17 @@ const StatsPage = () => {
   const changeCurrentWeek = (value: number) => {
     if (value === -1 && decrementCondition) return;
     if (value === 1 && incrementCondition) return;
-    setCurrentWeek(prev => prev + value);
-  }
+    setCurrentWeek((prev) => prev + value);
+  };
 
   const timeSpentToday = userSettings?.todayStats.timeSpent
     ? userSettings.todayStats.timeSpent
     : 0;
   const timeSpentThisWeek = userSettings?.weekTimeSpent
-    ? userSettings.weekTimeSpent[currentWeek].data.reduce((a, b) => a + b.value, 0)
+    ? userSettings.weekTimeSpent[currentWeek].data.reduce(
+        (a, b) => a + b.value,
+        0
+      )
     : 0;
   const incorrectCategoryPuzzles =
     selectedPiece?.value && selectedPiece?.correct
@@ -75,6 +78,12 @@ const StatsPage = () => {
       : 0;
   const timeSpentOnCategoryPuzzles = selectedPiece?.timeSpent
     ? selectedPiece.timeSpent
+    : 0;
+  const correctPuzzlesToday = userSettings?.todayStats.puzzles.correct
+    ? userSettings.todayStats.puzzles.correct
+    : 0;
+  const incorrectPuzzlesToday = userSettings?.todayStats.puzzles.incorrect
+    ? userSettings.todayStats.puzzles.incorrect
     : 0;
 
   return (
@@ -87,7 +96,7 @@ const StatsPage = () => {
         className="w-[90%] pb-10"
       >
         <View
-          className="border-2 rounded-xl p-5 gap-3"
+          className="border-2 rounded-xl p-5 gap-4 w-full"
           style={{
             backgroundColor: colors.surface,
             borderColor: colors.border,
@@ -97,102 +106,287 @@ const StatsPage = () => {
             className="text-2xl font-bold text-center"
             style={{ color: colors.text }}
           >
-            Weekly Puzzles
+            Activity Today
           </Text>
-          <View className="w-full items-center justify-center flex-row">
-            <TouchableOpacity disabled={decrementCondition} style={{}} onPress={() => changeCurrentWeek(-1)}>
-              <Ionicons name="chevron-back" color={colors.text} size={28} />
-            </TouchableOpacity>
-            <Text style={{ color: colors.text }}>
-              {convertDate(userSettings?.weekPuzzles?.[currentWeek]?.from)} -{" "}
-              {convertDate(userSettings?.weekPuzzles?.[currentWeek]?.to)}
-            </Text>
-            <TouchableOpacity onPress={() => changeCurrentWeek(1)}>
-              <Ionicons name="chevron-forward" color={colors.text} size={28} />
-            </TouchableOpacity>
+          <View>
+            <View className="flex-row gap-2 w-full">
+              <View className="rounded-xl overflow-hidden flex-1">
+                <LinearGradient
+                  colors={colors.gradients.success}
+                  className="p-2 items-center"
+                >
+                  <Text
+                    className="text-xl font-medium"
+                    style={{ color: colors.text }}
+                  >
+                    Correct
+                  </Text>
+                  <Text
+                    className="text-3xl font-bold"
+                    style={{ color: colors.text }}
+                  >
+                    {correctPuzzlesToday}
+                  </Text>
+                </LinearGradient>
+              </View>
+              <View className="rounded-xl overflow-hidden flex-1">
+                <LinearGradient
+                  colors={colors.gradients.danger}
+                  className="p-2 items-center"
+                >
+                  <Text
+                    className="text-xl font-medium"
+                    style={{ color: colors.text }}
+                  >
+                    Incorrect
+                  </Text>
+                  <Text
+                    className="text-3xl font-bold"
+                    style={{ color: colors.text }}
+                  >
+                    {incorrectPuzzlesToday}
+                  </Text>
+                </LinearGradient>
+              </View>
+            </View>
           </View>
-          <BarChart
-            data={
-              userSettings?.weekPuzzles?.[currentWeek]
-                ? userSettings.weekPuzzles[currentWeek].data
-                : fallbackBarData
-            }
-            height={300}
-            yAxisIndicesColor={colors.text}
-            xAxisLabelTextStyle={{
-              color: colors.text,
-            }}
-            yAxisTextStyle={{
-              color: colors.text,
-            }}
-            xAxisThickness={0}
-            yAxisThickness={0}
-            isAnimated
-            barWidth={25}
-            barBorderRadius={4}
-            hideRules
-            showValuesAsTopLabel
-            topLabelTextStyle={{
-              color: colors.text,
-              textAlign: "center",
-            }}
-            showGradient
-            width={width * 0.75}
-          />
         </View>
         <View
-          className="border-2 rounded-xl p-5 gap-3"
+          className="border-2 rounded-xl p-5 gap-4"
           style={{
             backgroundColor: colors.surface,
             borderColor: colors.border,
           }}
         >
-          <Text
-            className="text-2xl font-bold text-center"
-            style={{ color: colors.text }}
-          >
-            Weekly Points
-          </Text>
-          <View className="w-full items-center justify-center flex-row">
-            <TouchableOpacity onPress={() => changeCurrentWeek(-1)}>
-              <Ionicons name="chevron-back" color={colors.text} size={28} />
-            </TouchableOpacity>
-            <Text style={{ color: colors.text }}>
-              {convertDate(userSettings?.weekPoints?.[currentWeek]?.from)} -{" "}
-              {convertDate(userSettings?.weekPoints?.[currentWeek]?.to)}
+          <View>
+            <Text
+              className="text-2xl font-bold text-center"
+              style={{ color: colors.text }}
+            >
+              Weekly Activity
             </Text>
-            <TouchableOpacity onPress={() => changeCurrentWeek(1)}>
-              <Ionicons name="chevron-forward" color={colors.text} size={28} />
-            </TouchableOpacity>
+            <View className="w-full items-center justify-center flex-row">
+              <TouchableOpacity
+                disabled={decrementCondition}
+                style={{ opacity: decrementCondition ? 0.6 : 1 }}
+                onPress={() => changeCurrentWeek(-1)}
+              >
+                <Ionicons name="chevron-back" color={colors.text} size={28} />
+              </TouchableOpacity>
+              <View className="flex-row gap-2">
+                <Text className="text-lg" style={{ color: colors.text }}>
+                  {convertDate(userSettings?.weekPuzzles?.[currentWeek]?.from)}
+                </Text>
+                <Text className="text-lg" style={{ color: colors.text }}>
+                  -
+                </Text>
+                <Text className="text-lg" style={{ color: colors.text }}>
+                  {convertDate(userSettings?.weekPuzzles?.[currentWeek]?.to)}
+                </Text>
+              </View>
+              <TouchableOpacity
+                disabled={incrementCondition}
+                style={{ opacity: incrementCondition ? 0.6 : 1 }}
+                onPress={() => changeCurrentWeek(1)}
+              >
+                <Ionicons
+                  name="chevron-forward"
+                  color={colors.text}
+                  size={28}
+                />
+              </TouchableOpacity>
+            </View>
           </View>
-          <BarChart
-            data={
-              userSettings?.weekPoints?.[currentWeek]?.data?.length
-                ? userSettings.weekPoints[currentWeek].data
-                : fallbackBarData
-            }
-            height={300}
-            yAxisIndicesColor={colors.text}
-            xAxisLabelTextStyle={{
-              color: colors.text,
-            }}
-            yAxisTextStyle={{
-              color: colors.text,
-            }}
-            xAxisThickness={0}
-            yAxisThickness={0}
-            isAnimated
-            barWidth={25}
-            barBorderRadius={4}
-            hideRules
-            showValuesAsTopLabel
-            topLabelTextStyle={{
-              color: colors.text,
-              textAlign: "center",
-            }}
-            showGradient
-            width={width * 0.75}
-          />
+          <View className="gap-2">
+            <Text
+              className="text-xl font-bold text-center"
+              style={{ color: colors.text }}
+            >
+              Puzzles
+            </Text>
+            <View className="flex-row items-center justify-center w-full gap-4">
+              <View className="flex-row items-center gap-2">
+                <View className="rounded-full overflow-hidden">
+                  <LinearGradient
+                    className="size-4"
+                    colors={colors.gradients.success}
+                  ></LinearGradient>
+                </View>
+                <Text
+                  className="font-medium"
+                  style={{ color: colors.textMuted }}
+                >
+                  Correct
+                </Text>
+              </View>
+              <View className="flex-row items-center gap-2">
+                <View className="rounded-full overflow-hidden">
+                  <LinearGradient
+                    className="size-4"
+                    colors={colors.gradients.danger}
+                  ></LinearGradient>
+                </View>
+                <Text
+                  className="font-medium"
+                  style={{ color: colors.textMuted }}
+                >
+                  Incorrect
+                </Text>
+              </View>
+            </View>
+            <BarChart
+              data={
+                userSettings?.weekPuzzles?.[currentWeek]
+                  ? userSettings.weekPuzzles[currentWeek].data
+                  : fallbackBarData
+              }
+              height={300}
+              yAxisIndicesColor={colors.text}
+              xAxisLabelTextStyle={{
+                color: colors.text,
+              }}
+              yAxisTextStyle={{
+                color: colors.text,
+              }}
+              xAxisThickness={0}
+              yAxisThickness={0}
+              isAnimated
+              barWidth={25}
+              barBorderRadius={4}
+              hideRules
+              showValuesAsTopLabel
+              topLabelTextStyle={{
+                color: colors.text,
+                textAlign: "center",
+              }}
+              showGradient
+              width={width * 0.75}
+            />
+          </View>
+          <View className="gap-2 mt-2">
+            <Text
+              className="text-xl font-bold text-center"
+              style={{ color: colors.text }}
+            >
+              Points Earned
+            </Text>
+            <BarChart
+              data={
+                userSettings?.weekPoints?.[currentWeek]?.data?.length
+                  ? userSettings.weekPoints[currentWeek].data
+                  : fallbackBarData
+              }
+              height={300}
+              yAxisIndicesColor={colors.text}
+              xAxisLabelTextStyle={{
+                color: colors.text,
+              }}
+              yAxisTextStyle={{
+                color: colors.text,
+              }}
+              xAxisThickness={0}
+              yAxisThickness={0}
+              isAnimated
+              barWidth={25}
+              barBorderRadius={4}
+              hideRules
+              showValuesAsTopLabel
+              topLabelTextStyle={{
+                color: colors.text,
+                textAlign: "center",
+              }}
+              showGradient
+              width={width * 0.75}
+            />
+          </View>
+          <View className="gap-2 mt-2 items-center">
+            <Text
+              className="text-xl font-bold text-center"
+              style={{ color: colors.text }}
+            >
+              Time Spent
+            </Text>
+            <View className="flex-row gap-2">
+              <View className="items-center">
+                <View className="rounded-lg overflow-hidden">
+                  <LinearGradient
+                    colors={colors.gradients.empty}
+                    className="p-2"
+                  >
+                    <Text
+                      className="text-2xl font-medium"
+                      style={{ color: colors.text }}
+                    >
+                      {String(Math.floor(timeSpentThisWeek / 3600)).padStart(
+                        2,
+                        "0"
+                      )}
+                    </Text>
+                  </LinearGradient>
+                </View>
+                <Text
+                  className="font-medium"
+                  style={{ color: colors.textMuted }}
+                >
+                  Hrs
+                </Text>
+              </View>
+              <Text
+                className="text-xl font-bold pt-2"
+                style={{ color: colors.text }}
+              >
+                :
+              </Text>
+              <View className="items-center">
+                <View className="rounded-lg overflow-hidden">
+                  <LinearGradient
+                    colors={colors.gradients.empty}
+                    className="p-2"
+                  >
+                    <Text
+                      className="text-2xl font-medium"
+                      style={{ color: colors.text }}
+                    >
+                      {String(calcMins(timeSpentThisWeek)).padStart(2, "0")}
+                    </Text>
+                  </LinearGradient>
+                </View>
+                <Text
+                  className="font-medium"
+                  style={{ color: colors.textMuted }}
+                >
+                  Min
+                </Text>
+              </View>
+              <Text
+                className="text-xl font-bold pt-2"
+                style={{ color: colors.text }}
+              >
+                :
+              </Text>
+              <View className="items-center">
+                <View className="rounded-lg overflow-hidden">
+                  <LinearGradient
+                    colors={colors.gradients.empty}
+                    className="p-2"
+                  >
+                    <Text
+                      className="text-2xl font-medium"
+                      style={{ color: colors.text }}
+                    >
+                      {String(calcSeconds(timeSpentThisWeek)).padStart(2, "0")}
+                    </Text>
+                  </LinearGradient>
+                </View>
+                <Text
+                  className="font-medium"
+                  style={{ color: colors.textMuted }}
+                >
+                  Sec
+                </Text>
+              </View>
+            </View>
+          </View>
         </View>
         <View
           className="border-2 rounded-xl p-5 gap-3 w-full"
