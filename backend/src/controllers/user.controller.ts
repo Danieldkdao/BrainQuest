@@ -2,6 +2,8 @@ import { getAuth } from "@clerk/express";
 import { type Request, type Response } from "express";
 import userModel, { type LevelType } from "../models/user.model.js";
 import { addNewWeeks } from "./train.controller.js";
+import { fromZonedTime } from "date-fns-tz";
+import { startOfDay, subDays } from "date-fns";
 
 export const Levels: LevelType[] = [
   {
@@ -226,35 +228,30 @@ export const fetchUsers = async (req: Request, res: Response) => {
 export const checkResetStreak = async (req: Request, res: Response) => {
   try {
     const { userId } = getAuth(req);
-    const now = Date.now();
+    const now = new Date();
     const user = await userModel.findOne(
       { userId },
       {
         lastLogged: 1,
         streak: 1,
+        "checkNewDay.timezone": 1,
       }
     );
-    if (!user)
+    if (!user || !user.lastLogged) {
+      await userModel.updateOne({ userId }, { $set: { streak: 0 } });
       return res.json({
         success: false,
         message: "User is not logged in or user doesn't exist.",
       });
-    const nextDay = new Date(user.lastLogged);
-    nextDay.setHours(24, 0, 0, 0);
-    if (nextDay.getTime() + 24 * 60 * 60 * 1000 <= now) {
-      user.streak = 0;
     }
-    const puzzleWeeks = await userModel.findOne(
-      { userId },
-      { "weekPoints.to": 1, _id: 0 }
+    const startOfYesterday = fromZonedTime(
+      startOfDay(subDays(now, 1)),
+      user.checkNewDay.timezone
     );
-    if (puzzleWeeks?.weekPuzzles && puzzleWeeks.weekPuzzles.length > 0) {
-      const sortedWeeks = puzzleWeeks.weekPuzzles.sort((a, b) => b.to - a.to);
-      if (sortedWeeks.length === 0 || sortedWeeks[0].to < now) {
-        await addNewWeeks(userId, now, 0, 0, 0, 0);
-      }
+
+    if (user.lastLogged < startOfYesterday.getTime()) {
+      await userModel.updateOne({ userId }, { $set: {streak: 0} });
     }
-    await user.save();
     res.json({ success: true, message: "Check reset successful!" });
   } catch (error) {
     console.error(error);

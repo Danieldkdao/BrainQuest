@@ -24,7 +24,7 @@ import {
   ChallengeReference,
 } from "../utils/reference.js";
 import challengeModel from "../models/challenge.model.js";
-import { startOfDay, startOfWeek } from "date-fns";
+import { startOfDay, startOfWeek, subDays } from "date-fns";
 import { fromZonedTime } from "date-fns-tz";
 
 type QueryForLevel = {
@@ -195,7 +195,7 @@ const checkStreak = async (userId: string | null) => {
       user.checkNewDay.timezone
     );
     const startOfYesterday = fromZonedTime(
-      startOfDay(new Date(now.getTime() - 24 * 60 * 60 * 1000)),
+      startOfDay(subDays(now, 1)),
       user.checkNewDay.timezone
     );
 
