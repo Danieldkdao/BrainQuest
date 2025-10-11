@@ -166,7 +166,7 @@ export type User = {
   level: LevelType;
   streak: number;
   todayStats: TodayStats;
-  lastLogged: number;
+  lastLogged: number | null;
   weekPuzzles: Weekly[];
   weekPoints: Weekly2[];
   weekTimeSpent: Weekly2[];

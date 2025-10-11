@@ -24,6 +24,8 @@ import {
   ChallengeReference,
 } from "../utils/reference.js";
 import challengeModel from "../models/challenge.model.js";
+import { startOfDay, startOfWeek } from "date-fns";
+import { fromZonedTime } from "date-fns-tz";
 
 type QueryForLevel = {
   userId: string | null;
@@ -174,27 +176,42 @@ const checkEarnedBadges = async (userId: string | null) => {
 
 const checkStreak = async (userId: string | null) => {
   try {
-    const user = await userModel.findOne({ userId }, { lastLogged: 1, _id: 0 });
-    if (!user) return;
-    const now = Date.now();
-    const lastLogged = user.lastLogged;
-    const date = new Date(lastLogged);
+    const user = await userModel.findOne(
+      { userId },
+      { lastLogged: 1, "checkNewDay.timezone": 1, _id: 0 }
+    );
+    if (!user || !user.lastLogged) {
+      await userModel.updateOne(
+        { userId },
+        { $set: { streak: 1, lastLogged: Date.now() } }
+      );
+      return;
+    }
+    const now = new Date();
+    const lastLogged = new Date(user.lastLogged);
 
-    const nextMidnight = new Date(date);
-    nextMidnight.setHours(24, 0, 0, 0);
+    const startOfToday = fromZonedTime(
+      startOfDay(now),
+      user.checkNewDay.timezone
+    );
+    const startOfYesterday = fromZonedTime(
+      startOfDay(new Date(now.getTime() - 24 * 60 * 60 * 1000)),
+      user.checkNewDay.timezone
+    );
 
-    const endOfNextDay = new Date(nextMidnight);
-    endOfNextDay.setHours(24, 0, 0, 0);
-    await userModel.updateOne({ userId }, { $set: { lastLogged: Date.now() } });
-    if (nextMidnight.getTime() <= now && now <= endOfNextDay.getTime()) {
+    await userModel.updateOne(
+      { userId },
+      { $set: { lastLogged: now.getTime() } }
+    );
+
+    if (lastLogged >= startOfYesterday && lastLogged < startOfToday) {
       await userModel.updateOne(
         {
           userId,
         },
         { $inc: { streak: 1 } }
       );
-    }
-    if (endOfNextDay.getTime() < now) {
+    } else if (lastLogged < startOfYesterday) {
       await userModel.updateOne(
         {
           userId,
@@ -266,12 +283,18 @@ const updateUser = async (
   timeSpent: number,
   categories: CategoryArrayItemSave[]
 ) => {
-  const user = await userModel.findOne({ userId }, { "checkNewDay.timezone": 1, _id: 0 });
-  if(!user) return;
+  const user = await userModel.findOne(
+    { userId },
+    { "checkNewDay.timezone": 1, _id: 0 }
+  );
+  if (!user) return;
   const timezone = user.checkNewDay.timezone;
   const numDate = Date.now();
   const date = new Date(numDate);
-  const day = date.toLocaleDateString("en-US", { weekday: "short", timeZone: timezone });
+  const day = date.toLocaleDateString("en-US", {
+    weekday: "short",
+    timeZone: timezone,
+  });
   try {
     const user: Pick<IUser, "weekPuzzles" | "_id" | "lastLogged"> | null =
       await userModel
@@ -308,10 +331,14 @@ const updateUser = async (
     if (!user) return;
     const weeks = user.weekPuzzles;
     weeks.sort((a, b) => b.to - a.to);
-    if (weeks[0].to < numDate) {
+
+    const startOfThisWeek = startOfWeek(new Date(), { weekStartsOn: 1 });
+    const startOfThisWeekTz = fromZonedTime(startOfThisWeek, timezone);
+
+    if (weeks[0].to < startOfThisWeekTz.getTime()) {
       await addNewWeeks(
         userId,
-        numDate,
+        Date.now(),
         correctPuzzles,
         incorrectPuzzles,
         pointsEarned,

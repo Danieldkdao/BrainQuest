@@ -138,7 +138,7 @@ export interface IUser extends Document {
   level: LevelType;
   streak: number;
   todayStats: TodayStats;
-  lastLogged: number;
+  lastLogged: number | null;
   weekPuzzles: Weekly[];
   weekPoints: Weekly[];
   weekTimeSpent: Weekly[];
@@ -500,7 +500,7 @@ const UserSchema = new Schema<IUser>({
   },
   streak: { type: Number, default: 0 },
   todayStats: { type: TodayStatsSchema, default: defaultData3 },
-  lastLogged: { type: Number, default: () => Date.now() - 24 * 60 * 60 * 1000 },
+  lastLogged: { type: Number || null, default: null },
   weekPuzzles: {
     type: [WeeklySchema],
     default: () => [
