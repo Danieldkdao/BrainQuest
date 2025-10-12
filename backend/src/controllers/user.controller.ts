@@ -1,8 +1,7 @@
 import { getAuth } from "@clerk/express";
 import { type Request, type Response } from "express";
 import userModel, { type LevelType } from "../models/user.model.js";
-import { addNewWeeks } from "./train.controller.js";
-import { fromZonedTime } from "date-fns-tz";
+import { fromZonedTime, toZonedTime } from "date-fns-tz";
 import { startOfDay, subDays } from "date-fns";
 
 export const Levels: LevelType[] = [
@@ -244,13 +243,13 @@ export const checkResetStreak = async (req: Request, res: Response) => {
         message: "User is not logged in or user doesn't exist.",
       });
     }
-    const startOfYesterday = fromZonedTime(
-      startOfDay(subDays(now, 1)),
-      user.checkNewDay.timezone
-    );
+    const timezone = user.checkNewDay.timezone || "UTC";
+    const nowInUserTz = toZonedTime(now, timezone);
+    const startOfYesterdayInUserTz = startOfDay(subDays(nowInUserTz, 1));
+    const startOfYesterday = fromZonedTime(startOfYesterdayInUserTz, timezone);
 
     if (user.lastLogged < startOfYesterday.getTime()) {
-      await userModel.updateOne({ userId }, { $set: {streak: 0} });
+      await userModel.updateOne({ userId }, { $set: { streak: 0 } });
     }
     res.json({ success: true, message: "Check reset successful!" });
   } catch (error) {

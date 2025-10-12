@@ -25,7 +25,7 @@ import {
 } from "../utils/reference.js";
 import challengeModel from "../models/challenge.model.js";
 import { startOfDay, startOfWeek, subDays } from "date-fns";
-import { fromZonedTime } from "date-fns-tz";
+import { fromZonedTime, toZonedTime } from "date-fns-tz";
 
 type QueryForLevel = {
   userId: string | null;
@@ -189,15 +189,14 @@ const checkStreak = async (userId: string | null) => {
     }
     const now = new Date();
     const lastLogged = new Date(user.lastLogged);
+    const userTimezone = user.checkNewDay.timezone || "UTC";
 
-    const startOfToday = fromZonedTime(
-      startOfDay(now),
-      user.checkNewDay.timezone
-    );
-    const startOfYesterday = fromZonedTime(
-      startOfDay(subDays(now, 1)),
-      user.checkNewDay.timezone
-    );
+    const nowInUserTz = toZonedTime(now, userTimezone);
+    const startOfDayInUserTz = startOfDay(nowInUserTz);
+    const startOfYesterdayInUserTz = startOfDay(subDays(nowInUserTz, 1));
+
+    const startOfToday = fromZonedTime(startOfDayInUserTz, userTimezone);
+    const startOfYesterday = fromZonedTime(startOfYesterdayInUserTz, userTimezone);
 
     await userModel.updateOne(
       { userId },
@@ -288,7 +287,7 @@ const updateUser = async (
     { "checkNewDay.timezone": 1, _id: 0 }
   );
   if (!user) return;
-  const timezone = user.checkNewDay.timezone;
+  const timezone = user.checkNewDay.timezone || "UTC";
   const numDate = Date.now();
   const date = new Date(numDate);
   const day = date.toLocaleDateString("en-US", {
@@ -332,7 +331,9 @@ const updateUser = async (
     const weeks = user.weekPuzzles;
     weeks.sort((a, b) => b.to - a.to);
 
-    const startOfThisWeek = startOfWeek(new Date(), { weekStartsOn: 1 });
+    const now = new Date();
+    const nowInUserTz = toZonedTime(now, timezone);
+    const startOfThisWeek = startOfWeek(nowInUserTz, { weekStartsOn: 1 });
     const startOfThisWeekTz = fromZonedTime(startOfThisWeek, timezone);
 
     if (weeks[0].to < startOfThisWeekTz.getTime()) {

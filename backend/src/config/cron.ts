@@ -1,7 +1,7 @@
 import cron from "cron";
 import https from "https";
 import { startOfDay } from "date-fns";
-import { fromZonedTime } from "date-fns-tz";
+import { fromZonedTime, toZonedTime } from "date-fns-tz";
 import { resetDailyChallenges } from "../controllers/challenge.controller.js";
 import userModel, { defaultData3 } from "../models/user.model.js";
 
@@ -17,7 +17,7 @@ const getCurrentHourInTimezone = (tz: string) => {
   return hour === 24 ? 0 : hour;
 };
 
-export const keepOpen = new cron.CronJob("*/14 * * * *", () => {
+export const keepOpen = new cron.CronJob("*/5 * * * *", () => {
   https
     .get(process.env.API_URL!, (res) => {
       if (res.statusCode === 200) console.log("GET request sent successfully!");
@@ -33,11 +33,13 @@ export const runDaily = new cron.CronJob("0 * * * *", async () => {
       const currentHour = getCurrentHourInTimezone(tz);
       if (currentHour === 0) {
         await resetDailyChallenges(tz);
-        const startOfToday = fromZonedTime(startOfDay(new Date()), tz);
+        const nowInUserTz = toZonedTime(new Date(), tz);
+        const startOfTodayInUserTz = startOfDay(nowInUserTz);
+        const startOfToday = fromZonedTime(startOfTodayInUserTz, tz);
         await userModel.updateMany(
           {
             "checkNewDay.timezone": tz,
-            "checkNewDay.lastChecked": { $lt: startOfToday },
+            "checkNewDay.lastChecked": { $lt: startOfToday.getTime() },
           },
           {
             $set: {
