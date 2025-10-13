@@ -72,6 +72,9 @@ const StatsPage = () => {
         0
       )
     : 0;
+  const allTimeSpent = userSettings?.timeSpent
+    ? userSettings.timeSpent
+    : 0;
   const incorrectCategoryPuzzles =
     selectedPiece?.value && selectedPiece?.correct
       ? selectedPiece.value - selectedPiece.correct
@@ -85,8 +88,17 @@ const StatsPage = () => {
   const incorrectPuzzlesToday = userSettings?.todayStats.puzzles.incorrect
     ? userSettings.todayStats.puzzles.incorrect
     : 0;
+  const allTimeCorrectPuzzles = userSettings?.puzzles.correct
+    ? userSettings.puzzles.correct
+    : 0;
+  const allTimeIncorrectPuzzles = userSettings?.puzzles.incorrect
+    ? userSettings.puzzles.incorrect
+    : 0;
   const pointsEarnedToday = userSettings?.todayStats.points
     ? userSettings.todayStats.points
+    : 0;
+  const allTimePointsEarned = userSettings?.points
+    ? userSettings.points
     : 0;
 
   return (
@@ -166,11 +178,11 @@ const StatsPage = () => {
             >
               Points Earned
             </Text>
-            <View>
-              <View className="rounded-xl overflow-hidden w-full">
+            <View className="items-center">
+              <View className="rounded-xl overflow-hidden">
                 <LinearGradient
                   colors={colors.gradients.empty}
-                  className="p-2 items-center"
+                  className="py-2 px-4 items-center"
                 >
                   <Text
                     className="text-3xl font-bold"
@@ -267,6 +279,126 @@ const StatsPage = () => {
                 >
                   Sec
                 </Text>
+              </View>
+            </View>
+          </View>
+          <View className="gap-3 w-full justify-between mt-4">
+            <Text
+              className="text-center text-2xl font-bold"
+              style={{ color: colors.text }}
+            >
+              Goal Progress
+            </Text>
+            <View className="w-full flex-row justify-between">
+              <View className="gap-3">
+                <Text
+                  className="text-xl font-medium text-center"
+                  style={{ color: colors.text }}
+                >
+                  Puzzles
+                </Text>
+                <View className="relative">
+                  <Progress.Circle
+                    progress={
+                      userSettings?.todayStats.puzzles &&
+                      userSettings?.puzzleGoal
+                        ? userSettings.todayStats.puzzles.correct /
+                          userSettings.puzzleGoal
+                        : 0
+                    }
+                    color={
+                      userSettings?.todayStats.puzzles &&
+                      userSettings?.puzzleGoal
+                        ? userSettings.todayStats.puzzles.correct >=
+                          userSettings.puzzleGoal
+                          ? colors.success
+                          : colors.gradients.muted[0]
+                        : colors.gradients.muted[0]
+                    }
+                    size={width * 0.35}
+                    borderWidth={0}
+                    unfilledColor={colors.gradients.empty[1]}
+                    thickness={15}
+                  />
+                  <View className="items-center justify-center absolute inset-0">
+                    <Text
+                      className="text-2xl font-bold"
+                      style={{ color: colors.text }}
+                    >
+                      {userSettings?.todayStats.puzzles &&
+                      userSettings?.puzzleGoal
+                        ? Math.round(
+                            (userSettings.todayStats.puzzles.correct /
+                              userSettings.puzzleGoal) *
+                              100
+                          )
+                        : 0}
+                      %
+                    </Text>
+                    <Text
+                      className="text-xl"
+                      style={{ color: colors.textMuted }}
+                    >
+                      {userSettings?.todayStats.puzzles.correct}/
+                      {userSettings?.puzzleGoal}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+              <View className="gap-3">
+                <Text
+                  className="text-xl font-medium text-center"
+                  style={{ color: colors.text }}
+                >
+                  Points
+                </Text>
+                <View className="relative">
+                  <Progress.Circle
+                    progress={
+                      userSettings?.todayStats?.points &&
+                      userSettings?.pointsGoal
+                        ? userSettings.todayStats.points /
+                          userSettings.pointsGoal
+                        : 0
+                    }
+                    color={
+                      userSettings?.todayStats.points &&
+                      userSettings?.pointsGoal
+                        ? userSettings.todayStats.points >=
+                          userSettings.pointsGoal
+                          ? colors.success
+                          : colors.gradients.muted[0]
+                        : colors.gradients.muted[0]
+                    }
+                    size={width * 0.35}
+                    borderWidth={0}
+                    unfilledColor={colors.gradients.empty[1]}
+                    thickness={15}
+                  />
+                  <View className="items-center justify-center absolute inset-0">
+                    <Text
+                      className="text-2xl font-bold"
+                      style={{ color: colors.text }}
+                    >
+                      {userSettings?.todayStats.points &&
+                      userSettings?.pointsGoal
+                        ? Math.round(
+                            (userSettings.todayStats.points /
+                              userSettings.pointsGoal) *
+                              100
+                          )
+                        : 0}
+                      %
+                    </Text>
+                    <Text
+                      className="text-xl"
+                      style={{ color: colors.textMuted }}
+                    >
+                      {userSettings?.todayStats.points}/
+                      {userSettings?.pointsGoal}
+                    </Text>
+                  </View>
+                </View>
               </View>
             </View>
           </View>
@@ -509,15 +641,182 @@ const StatsPage = () => {
           </View>
         </View>
         <View
-          className="border-2 rounded-xl p-5 gap-3 flex-row w-full justify-center"
+          className="border-2 rounded-xl p-5 gap-3 w-full items-center"
           style={{
             backgroundColor: colors.surface,
             borderColor: colors.border,
           }}
         >
+          <Text
+            className="text-center text-2xl font-bold"
+            style={{ color: colors.text }}
+          >
+            All Time Stats
+          </Text>
+          <View className="w-full gap-4">
+            <View className="gap-2">
+              <Text
+                className="text-xl font-bold text-center"
+                style={{ color: colors.text }}
+              >
+                Puzzles
+              </Text>
+              <View className="flex-row gap-2 w-full">
+                <View className="rounded-xl overflow-hidden flex-1">
+                  <LinearGradient
+                    colors={colors.gradients.success}
+                    className="p-2 items-center"
+                  >
+                    <Text
+                      className="text-xl font-medium"
+                      style={{ color: colors.text }}
+                    >
+                      Correct
+                    </Text>
+                    <Text
+                      className="text-3xl font-bold"
+                      style={{ color: colors.text }}
+                    >
+                      {allTimeCorrectPuzzles}
+                    </Text>
+                  </LinearGradient>
+                </View>
+                <View className="rounded-xl overflow-hidden flex-1">
+                  <LinearGradient
+                    colors={colors.gradients.danger}
+                    className="p-2 items-center"
+                  >
+                    <Text
+                      className="text-xl font-medium"
+                      style={{ color: colors.text }}
+                    >
+                      Incorrect
+                    </Text>
+                    <Text
+                      className="text-3xl font-bold"
+                      style={{ color: colors.text }}
+                    >
+                      {allTimeIncorrectPuzzles}
+                    </Text>
+                  </LinearGradient>
+                </View>
+              </View>
+            </View>
+            <View className="gap-2">
+              <Text
+                className="text-xl font-bold text-center"
+                style={{ color: colors.text }}
+              >
+                Points Earned
+              </Text>
+              <View className="items-center">
+                <View className="rounded-xl overflow-hidden">
+                  <LinearGradient
+                    colors={colors.gradients.empty}
+                    className="py-2 px-4 items-center"
+                  >
+                    <Text
+                      className="text-3xl font-bold"
+                      style={{ color: colors.text }}
+                    >
+                      {allTimePointsEarned}
+                    </Text>
+                  </LinearGradient>
+                </View>
+              </View>
+            </View>
+            <View className="gap-2 items-center">
+              <Text
+                className="text-xl font-medium"
+                style={{ color: colors.text }}
+              >
+                Time Spent
+              </Text>
+              <View className="flex-row gap-2">
+                <View className="items-center">
+                  <View className="rounded-lg overflow-hidden">
+                    <LinearGradient
+                      colors={colors.gradients.empty}
+                      className="p-2"
+                    >
+                      <Text
+                        className="text-2xl font-medium"
+                        style={{ color: colors.text }}
+                      >
+                        {String(Math.floor(allTimeSpent / 3600)).padStart(
+                          2,
+                          "0"
+                        )}
+                      </Text>
+                    </LinearGradient>
+                  </View>
+                  <Text
+                    className="font-medium"
+                    style={{ color: colors.textMuted }}
+                  >
+                    Hrs
+                  </Text>
+                </View>
+                <Text
+                  className="text-xl font-bold pt-2"
+                  style={{ color: colors.text }}
+                >
+                  :
+                </Text>
+                <View className="items-center">
+                  <View className="rounded-lg overflow-hidden">
+                    <LinearGradient
+                      colors={colors.gradients.empty}
+                      className="p-2"
+                    >
+                      <Text
+                        className="text-2xl font-medium"
+                        style={{ color: colors.text }}
+                      >
+                        {String(calcMins(allTimeSpent)).padStart(2, "0")}
+                      </Text>
+                    </LinearGradient>
+                  </View>
+                  <Text
+                    className="font-medium"
+                    style={{ color: colors.textMuted }}
+                  >
+                    Min
+                  </Text>
+                </View>
+                <Text
+                  className="text-xl font-bold pt-2"
+                  style={{ color: colors.text }}
+                >
+                  :
+                </Text>
+                <View className="items-center">
+                  <View className="rounded-lg overflow-hidden">
+                    <LinearGradient
+                      colors={colors.gradients.empty}
+                      className="p-2"
+                    >
+                      <Text
+                        className="text-2xl font-medium"
+                        style={{ color: colors.text }}
+                      >
+                        {String(calcSeconds(allTimeSpent)).padStart(2, "0")}
+                      </Text>
+                    </LinearGradient>
+                  </View>
+                  <Text
+                    className="font-medium"
+                    style={{ color: colors.textMuted }}
+                  >
+                    Sec
+                  </Text>
+                </View>
+              </View>
+            </View>
+          </View>
           <View className="gap-3 items-center">
             <Text
-              className="text-center text-2xl font-bold"
+              className="text-center text-xl font-bold"
               style={{ color: colors.text }}
             >
               Puzzles by Category
@@ -714,119 +1013,6 @@ const StatsPage = () => {
                   </View>
                 );
               })}
-            </View>
-          </View>
-        </View>
-        <View
-          className="border-2 rounded-xl p-5 gap-3 w-full justify-between"
-          style={{
-            backgroundColor: colors.surface,
-            borderColor: colors.border,
-          }}
-        >
-          <Text
-            className="text-center text-2xl font-bold"
-            style={{ color: colors.text }}
-          >
-            Goal Progress
-          </Text>
-          <View className="w-full flex-row justify-between">
-            <View className="gap-3">
-              <Text
-                className="text-xl font-medium text-center"
-                style={{ color: colors.text }}
-              >
-                Puzzles
-              </Text>
-              <View className="relative">
-                <Progress.Circle
-                  progress={
-                    userSettings?.todayStats.puzzles && userSettings?.puzzleGoal
-                      ? userSettings.todayStats.puzzles.correct /
-                        userSettings.puzzleGoal
-                      : 0
-                  }
-                  color={
-                    userSettings?.todayStats.puzzles && userSettings?.puzzleGoal
-                      ? userSettings.todayStats.puzzles.correct >=
-                        userSettings.puzzleGoal
-                        ? colors.success
-                        : colors.gradients.muted[0]
-                      : colors.gradients.muted[0]
-                  }
-                  size={width * 0.35}
-                  borderWidth={0}
-                  unfilledColor={colors.gradients.empty[1]}
-                  thickness={15}
-                />
-                <View className="items-center justify-center absolute inset-0">
-                  <Text
-                    className="text-2xl font-bold"
-                    style={{ color: colors.text }}
-                  >
-                    {userSettings?.todayStats.puzzles &&
-                    userSettings?.puzzleGoal
-                      ? Math.round(
-                          (userSettings.todayStats.puzzles.correct /
-                            userSettings.puzzleGoal) *
-                            100
-                        )
-                      : 0}
-                    %
-                  </Text>
-                  <Text className="text-xl" style={{ color: colors.textMuted }}>
-                    {userSettings?.todayStats.puzzles.correct}/
-                    {userSettings?.puzzleGoal}
-                  </Text>
-                </View>
-              </View>
-            </View>
-            <View className="gap-3">
-              <Text
-                className="text-xl font-medium text-center"
-                style={{ color: colors.text }}
-              >
-                Points
-              </Text>
-              <View className="relative">
-                <Progress.Circle
-                  progress={
-                    userSettings?.todayStats?.points && userSettings?.pointsGoal
-                      ? userSettings.todayStats.points / userSettings.pointsGoal
-                      : 0
-                  }
-                  color={
-                    userSettings?.todayStats.points && userSettings?.pointsGoal
-                      ? userSettings.todayStats.points >=
-                        userSettings.pointsGoal
-                        ? colors.success
-                        : colors.gradients.muted[0]
-                      : colors.gradients.muted[0]
-                  }
-                  size={width * 0.35}
-                  borderWidth={0}
-                  unfilledColor={colors.gradients.empty[1]}
-                  thickness={15}
-                />
-                <View className="items-center justify-center absolute inset-0">
-                  <Text
-                    className="text-2xl font-bold"
-                    style={{ color: colors.text }}
-                  >
-                    {userSettings?.todayStats.points && userSettings?.pointsGoal
-                      ? Math.round(
-                          (userSettings.todayStats.points /
-                            userSettings.pointsGoal) *
-                            100
-                        )
-                      : 0}
-                    %
-                  </Text>
-                  <Text className="text-xl" style={{ color: colors.textMuted }}>
-                    {userSettings?.todayStats.points}/{userSettings?.pointsGoal}
-                  </Text>
-                </View>
-              </View>
             </View>
           </View>
         </View>
