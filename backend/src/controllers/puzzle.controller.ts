@@ -6,6 +6,8 @@ import puzzleModel, {
 } from "../models/puzzle.model.js";
 import cloudinary, { deleteImage } from "../config/cloudinary.js";
 import { getAuth } from "@clerk/express";
+import userModel from "../models/user.model.js";
+import { toZonedTime } from "date-fns-tz";
 
 type CreateType = {
   question: string;
@@ -28,13 +30,26 @@ type PostCommentType = {
   content: string;
 };
 
-const getGlobalDailyPuzzle = (puzzles: IPuzzle[]) => {
+const getGlobalDailyPuzzle = (puzzles: IPuzzle[], timezone: string) => {
   const epochDate = new Date("2025-01-01T00:00:00Z");
-  const now = new Date();
+
+  const nowInUserTz = toZonedTime(new Date(), timezone);
+  const epochDateInUserTz = toZonedTime(epochDate, timezone);
+
+  const userLocalTime = new Date(
+    nowInUserTz.getFullYear(),
+    nowInUserTz.getMonth(),
+    nowInUserTz.getDate(),
+  );
+  const epochLocalTime = new Date(
+    epochDateInUserTz.getFullYear(),
+    epochDateInUserTz.getMonth(),
+    epochDateInUserTz.getDate()
+  );
 
   const millisecondsPerDay = 1000 * 24 * 60 * 60;
   const daysSinceEpoch = Math.floor(
-    (now.getTime() - epochDate.getTime()) / millisecondsPerDay
+    (userLocalTime.getTime() - epochLocalTime.getTime()) / millisecondsPerDay
   );
 
   const puzzleIndex = daysSinceEpoch % puzzles.length;
@@ -46,7 +61,8 @@ export const createPuzzle = async (
   res: Response
 ) => {
   try {
-    const { question, answer, hint, category, difficulty, image, creator } = req.body;
+    const { question, answer, hint, category, difficulty, image, creator } =
+      req.body;
     const result = await cloudinary.uploader.upload(image);
     const newPuzzle = new puzzleModel({
       question,
@@ -270,10 +286,17 @@ export const getScrollPuzzles = async (
 
 export const getDailyPuzzle = async (req: Request, res: Response) => {
   try {
-    const puzzles = await puzzleModel.find().sort({createdAt: 1, _id: 1});
+    const { userId } = getAuth(req);
+    const puzzles = await puzzleModel.find().sort({ createdAt: 1, _id: 1 });
     if (!puzzles || puzzles.length === 0)
       return res.json({ success: false, message: "No daily puzzle found." });
-    const dailyPuzzle = getGlobalDailyPuzzle(puzzles);
+    const user = await userModel.findOne(
+      { userId },
+      { "checkNewDay.timezone": 1, _id: 0 }
+    );
+    if(!user) return res.json({success: false, message: "No user found."});
+    const timezone = user.checkNewDay.timezone || "UTC";
+    const dailyPuzzle = getGlobalDailyPuzzle(puzzles, timezone);
     res.json({
       success: true,
       message: "Daily puzzle fetched successfully!",

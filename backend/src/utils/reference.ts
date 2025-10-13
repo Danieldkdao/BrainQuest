@@ -1,6 +1,8 @@
+import { fromZonedTime, toZonedTime } from "date-fns-tz";
 import challengeModel from "../models/challenge.model.js";
 import trainingSessionModel from "../models/training-session.model.js";
 import userModel, { type TodayStats } from "../models/user.model.js";
+import { startOfDay } from "date-fns";
 
 const addPoints = async (userId: string | null, points: number) => {
   const dateNum = Date.now();
@@ -172,11 +174,21 @@ export const ChallengeReference = {
       { userId },
       { "checkNewDay.timezone": 1, _id: 0 }
     );
+    const timezone = user ? user.checkNewDay.timezone : "UTC";
     const sessions = await trainingSessionModel
-      .find({ user: userId }, { pointsEarned: 1, _id: 0 })
+      .find({ user: userId }, { pointsEarned: 1, createdAt: 1, _id: 0 })
       .sort({ pointsEarned: -1 });
     if (sessions && sessions.length > 0) {
-      const isCompleted = sessions[0].pointsEarned >= 1000;
+      const nowInUserTz = toZonedTime(new Date(), timezone);
+      const startOfTodayInUserTz = startOfDay(nowInUserTz);
+      const startOfTodayUtc = fromZonedTime(startOfTodayInUserTz, timezone);
+      let greatestPoints = 0;
+      sessions.forEach(item => {
+        if(item.createdAt >= startOfTodayUtc && item.pointsEarned > greatestPoints){
+          greatestPoints = item.pointsEarned;
+        }
+      });
+      const isCompleted = greatestPoints >= 1000;
       const progress = isCompleted ? 1000 : sessions[0].pointsEarned;
       if (isCompleted) {
         await addPoints(userId, 200);
@@ -188,7 +200,6 @@ export const ChallengeReference = {
           "usersComplete.$.isCompleted": isCompleted,
         }
       );
-      const timezone = user ? user.checkNewDay.timezone : "UTC";
       if (result.modifiedCount === 0) {
         const newUser = {
           user: userId,
