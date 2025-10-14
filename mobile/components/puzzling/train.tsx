@@ -34,6 +34,7 @@ type SettingsType = {
   hints: boolean;
   timePerQuestion: string;
   timeLimit: string | number;
+  numOfPuzzles: null | number;
 };
 
 export type TrainingStatsType = {
@@ -55,6 +56,7 @@ const TrainPage = () => {
     hints: true,
     timePerQuestion: "",
     timeLimit: "",
+    numOfPuzzles: null,
   });
   const [trainingStats, setTrainingStats] = useState<TrainingStatsType>({
     pointsEarned: 0,
@@ -81,7 +83,7 @@ const TrainPage = () => {
         return;
       }
       if (typeof settings.timeLimit === "string") {
-        if(!startSession) return;
+        if (!startSession) return;
         setTimeTakenNoLimit((prev) => prev + 1);
       } else {
         setSettings((prev) => ({
@@ -121,7 +123,7 @@ const TrainPage = () => {
       Toast.show({
         type: "error",
         text1: "Error",
-        text2: response.data.message
+        text2: response.data.message,
       });
     } catch (error) {
       console.error(error);
@@ -153,29 +155,40 @@ const TrainPage = () => {
       Toast.show({
         type: "error",
         text1: "Invalid time",
-        text2: "Please enter a valid time in seconds."
+        text2: "Please enter a valid time in seconds.",
       });
       return;
     }
-    if (!noLimit && Number(settings.timePerQuestion) <= 5){
+    if (!noLimit && Number(settings.timePerQuestion) <= 5) {
       setLoading(false);
       Toast.show({
         type: "error",
         text1: "Invalid time",
-        text2: "Time must be greater than 5 seconds."
+        text2: "Time must be greater than 5 seconds.",
       });
       return;
     }
-      const response = await fetchPuzzles(
-        settings.categories,
-        settings.difficulties
-      );
+    if(settings.numOfPuzzles !== null && (!Number.isInteger(settings.numOfPuzzles) || settings.numOfPuzzles <= 0)){
+      setLoading(false);
+      Toast.show({
+        type: "error",
+        text1: "Invalid number of puzzles",
+        text2: "Number of puzzles must be an integer greater than 0.",
+      });
+      return;
+    }
+    const response = await fetchPuzzles(
+      settings.categories,
+      settings.difficulties,
+      settings.numOfPuzzles,
+    );
     if (!response || response.length === 0) {
       setLoading(false);
       Toast.show({
         type: "error",
         text1: "No Puzzles Found",
-        text2: "No puzzles were found that meet the criteria. Please try something else.",
+        text2:
+          "No puzzles were found that meet the selected filters. Please try something else.",
       });
       return;
     }
@@ -200,6 +213,7 @@ const TrainPage = () => {
       hints: true,
       timePerQuestion: "",
       timeLimit: "",
+      numOfPuzzles: 1,
     });
     setTrainingStats({
       pointsEarned: 0,
@@ -324,7 +338,7 @@ const TrainPage = () => {
             </View>
           ) : (
             <View
-              className="w-full rounded-xl p-5 gap-5"
+              className="w-full rounded-xl p-5 gap-4"
               style={{ backgroundColor: colors.surface }}
             >
               <View className="flex-row items-center justify-between">
@@ -338,131 +352,129 @@ const TrainPage = () => {
                   <Ionicons name="close-circle" size={32} color={colors.text} />
                 </TouchableOpacity>
               </View>
-              <Text style={{ color: colors.textMuted }}>
-                Note: Selecting none of the fields will select all of them by
-                default.
-              </Text>
-              <Text
-                className="text-xl font-medium"
-                style={{ color: colors.text }}
-              >
-                Diffculty Level
-              </Text>
-              <View className="flex-row flex-wrap gap-3">
-                {difficulties.map((item) => {
-                  const isSelected = settings.difficulties.includes(
-                    item.difficulty
-                  );
-                  return (
-                    <TouchableOpacity
-                      onPress={() =>
-                        setSettings((prev) => {
-                          if (prev.difficulties.includes(item.difficulty)) {
-                            return {
-                              ...prev,
-                              difficulties: prev.difficulties.filter(
-                                (c) => c !== item.difficulty
-                              ),
-                            };
-                          }
+              <View className="gap-2">
+                <Text
+                  className="text-xl font-medium"
+                  style={{ color: colors.text }}
+                >
+                  Diffculty Level
+                </Text>
+                <View className="flex-row flex-wrap gap-3">
+                  {difficulties.map((item) => {
+                    const isSelected = settings.difficulties.includes(
+                      item.difficulty
+                    );
+                    return (
+                      <TouchableOpacity
+                        onPress={() =>
+                          setSettings((prev) => {
+                            if (prev.difficulties.includes(item.difficulty)) {
+                              return {
+                                ...prev,
+                                difficulties: prev.difficulties.filter(
+                                  (c) => c !== item.difficulty
+                                ),
+                              };
+                            }
 
-                          return {
-                            ...prev,
-                            difficulties: [
-                              ...prev.difficulties,
-                              item.difficulty,
-                            ],
-                          };
-                        })
-                      }
-                      key={item.id}
-                      className="py-3 px-4 rounded-xl border-2 flex flex-row items-center gap-2"
-                      style={{
-                        backgroundColor: isSelected
-                          ? colors.text
-                          : colors.surface,
-                        borderColor: isSelected ? colors.text : colors.border,
-                      }}
-                    >
-                      <Ionicons
-                        name={item.iconName}
-                        color={isSelected ? colors.bg : colors.textMuted}
-                        size={20}
-                      />
-                      <Text
-                        className="text-lg"
-                        style={{
-                          color: isSelected ? colors.bg : colors.textMuted,
-                        }}
-                      >
-                        {item.difficulty[0].toUpperCase() +
-                          item.difficulty
-                            .split("")
-                            .filter((_, i) => i !== 0)
-                            .join("")}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-              <Text
-                className="text-xl font-medium"
-                style={{ color: colors.text }}
-              >
-                Included Categories
-              </Text>
-              <View className="flex-row flex-wrap gap-3">
-                {categories.map((item) => {
-                  const isSelected = settings.categories.includes(
-                    item.category
-                  );
-                  return (
-                    <TouchableOpacity
-                      onPress={() =>
-                        setSettings((prev) => {
-                          if (prev.categories.includes(item.category)) {
                             return {
                               ...prev,
-                              categories: prev.categories.filter(
-                                (c) => c !== item.category
-                              ),
+                              difficulties: [
+                                ...prev.difficulties,
+                                item.difficulty,
+                              ],
                             };
-                          }
-                          return {
-                            ...prev,
-                            categories: [...prev.categories, item.category],
-                          };
-                        })
-                      }
-                      key={item.id}
-                      className="py-3 px-4 rounded-xl border-2 flex flex-row items-center gap-2"
-                      style={{
-                        backgroundColor: isSelected
-                          ? colors.text
-                          : colors.surface,
-                        borderColor: isSelected ? colors.text : colors.border,
-                      }}
-                    >
-                      <Ionicons
-                        name={item.iconName}
-                        color={isSelected ? colors.bg : colors.textMuted}
-                        size={20}
-                      />
-                      <Text
-                        className="text-lg"
+                          })
+                        }
+                        key={item.id}
+                        className="py-3 px-4 rounded-xl border-2 flex flex-row items-center gap-2"
                         style={{
-                          color: isSelected ? colors.bg : colors.textMuted,
+                          backgroundColor: isSelected
+                            ? colors.text
+                            : colors.surface,
+                          borderColor: isSelected ? colors.text : colors.border,
                         }}
                       >
-                        {item.category[0].toUpperCase() +
-                          item.category
-                            .split("")
-                            .filter((_, i) => i !== 0)
-                            .join("")}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
+                        <Ionicons
+                          name={item.iconName}
+                          color={isSelected ? colors.bg : colors.textMuted}
+                          size={20}
+                        />
+                        <Text
+                          style={{
+                            color: isSelected ? colors.bg : colors.textMuted,
+                          }}
+                        >
+                          {item.difficulty[0].toUpperCase() +
+                            item.difficulty
+                              .split("")
+                              .filter((_, i) => i !== 0)
+                              .join("")}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
+              <View className="gap-2">
+                <Text
+                  className="text-xl font-medium"
+                  style={{ color: colors.text }}
+                >
+                  Included Categories
+                </Text>
+                <View className="flex-row flex-wrap gap-3">
+                  {categories.map((item) => {
+                    const isSelected = settings.categories.includes(
+                      item.category
+                    );
+                    return (
+                      <TouchableOpacity
+                        onPress={() =>
+                          setSettings((prev) => {
+                            if (prev.categories.includes(item.category)) {
+                              return {
+                                ...prev,
+                                categories: prev.categories.filter(
+                                  (c) => c !== item.category
+                                ),
+                              };
+                            }
+                            return {
+                              ...prev,
+                              categories: [...prev.categories, item.category],
+                            };
+                          })
+                        }
+                        key={item.id}
+                        className="py-3 px-4 rounded-xl border-2 flex flex-row items-center gap-2"
+                        style={{
+                          backgroundColor: isSelected
+                            ? colors.text
+                            : colors.surface,
+                          borderColor: isSelected ? colors.text : colors.border,
+                        }}
+                      >
+                        <Ionicons
+                          name={item.iconName}
+                          color={isSelected ? colors.bg : colors.textMuted}
+                          size={20}
+                        />
+                        <Text
+                          style={{
+                            color: isSelected ? colors.bg : colors.textMuted,
+                          }}
+                        >
+                          {item.category[0].toUpperCase() +
+                            item.category
+                              .split("")
+                              .filter((_, i) => i !== 0)
+                              .join("")}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
               </View>
               <View>
                 <View className="flex-row items-center gap-3">
@@ -496,7 +508,38 @@ const TrainPage = () => {
                     }
                   />
                 </View>
-                <View className="gap-3 mt-4">
+                <View className="gap-2 mt-3">
+                  <Text
+                    className="text-xl font-medium"
+                    style={{ color: colors.text }}
+                  >
+                    Number of puzzles
+                  </Text>
+                  <Text
+                    className="leading-relaxed"
+                    style={{ color: colors.textMuted }}
+                  >
+                    If the amount you input is greater than the amount of
+                    puzzles available that match the filters above, then all
+                    available puzzles will be returned.
+                  </Text>
+                  <TextInput
+                    placeholder="5"
+                    placeholderTextColor={colors.textMuted}
+                    value={
+                      settings.numOfPuzzles ? String(settings.numOfPuzzles) : ""
+                    }
+                    onChangeText={(text) =>
+                      setSettings((prev) => ({
+                        ...prev,
+                        numOfPuzzles: text.trim() === "" ? null : Number(text),
+                      }))
+                    }
+                    className="border-2 self-start w-28 px-4 text-xl rounded-xl"
+                    style={{ color: colors.text, borderColor: colors.border }}
+                  />
+                </View>
+                <View className="gap-2 mt-3">
                   <Text
                     className="text-xl font-medium"
                     style={{ color: colors.text }}

@@ -16,7 +16,8 @@ type PuzzleContextType = {
   confirm: (title: string, text: string) => Promise<unknown | boolean>;
   fetchPuzzles: (
     categories: PuzzleCategory[],
-    difficulties: PuzzleDifficulty[]
+    difficulties: PuzzleDifficulty[],
+    numOfPuzzles: null | number,
   ) => Promise<Puzzle[] | undefined>;
   changeSelectedTab: (tab: number) => void;
 };
@@ -58,7 +59,8 @@ export const PuzzleContextProvider = ({
 
   const fetchPuzzles = async (
     categories: PuzzleCategory[],
-    difficulties: PuzzleDifficulty[]
+    difficulties: PuzzleDifficulty[],
+    numOfPuzzles: null | number,
   ) => {
     try {
       const response = await api.post<
@@ -66,6 +68,7 @@ export const PuzzleContextProvider = ({
       >("/puzzles/get-puzzles", {
         categories,
         difficulties,
+        numOfPuzzles,
       });
       if (response.data.success && response.data.puzzles) {
         return response.data.puzzles;

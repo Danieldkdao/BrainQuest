@@ -92,9 +92,7 @@ const PuzzleScreen = ({
 
       if (response.data.success) {
         if (response.data.correct === true) {
-          const points = hintUsed
-            ? 0
-            : PointsReference[puzzles[currentPuzzle].difficulty] * 15;
+          const points = PointsReference[puzzles[currentPuzzle].difficulty] * (hintUsed ? 5 : 15);
           setTrainingStats((prev) => ({
             ...prev,
             pointsEarned: prev.pointsEarned + points,

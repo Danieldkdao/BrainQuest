@@ -39,7 +39,7 @@ const getGlobalDailyPuzzle = (puzzles: IPuzzle[], timezone: string) => {
   const userLocalTime = new Date(
     nowInUserTz.getFullYear(),
     nowInUserTz.getMonth(),
-    nowInUserTz.getDate(),
+    nowInUserTz.getDate()
   );
   const epochLocalTime = new Date(
     epochDateInUserTz.getFullYear(),
@@ -88,14 +88,18 @@ export const getPuzzles = async (
   req: Request<
     {},
     {},
-    { categories: PuzzleCategory[]; difficulties: PuzzleDifficulty[] }
+    {
+      categories: PuzzleCategory[];
+      difficulties: PuzzleDifficulty[];
+      numOfPuzzles: number | null;
+    }
   >,
   res: Response
 ) => {
   const { userId } = getAuth(req);
-  const { categories, difficulties } = req.body;
+  const { categories, difficulties, numOfPuzzles } = req.body;
   try {
-    const filter: any = { "creator.id": userId };
+    const filter: any = { "creator.id": { $ne: userId } };
 
     if (categories.length !== 0) {
       filter.category = { $in: categories };
@@ -104,8 +108,13 @@ export const getPuzzles = async (
     if (difficulties.length !== 0) {
       filter.difficulty = { $in: difficulties };
     }
+    let puzzles: IPuzzle[];
+    if (numOfPuzzles && Number.isInteger(numOfPuzzles) && numOfPuzzles > 0) {
+      puzzles = await puzzleModel.find(filter).limit(numOfPuzzles);
+    } else {
+      puzzles = await puzzleModel.find(filter);
+    }
 
-    const puzzles = await puzzleModel.find(filter);
     res.json({
       success: true,
       message: "Puzzles fetched successfully!",
@@ -189,9 +198,8 @@ export const deletePuzzle = async (
 
 export const getPopularPuzzles = async (req: Request, res: Response) => {
   try {
-    const { userId } = getAuth(req);
     const popularPuzzles = await puzzleModel
-      .find({ "creator.id": { $ne: userId } })
+      .find()
       .sort({ attempts: -1, createdAt: -1 })
       .limit(3);
     res.json({
@@ -212,13 +220,11 @@ export const getDiscoverCategoryPuzzles = async (
   res: Response
 ) => {
   try {
-    const { userId } = getAuth(req);
     const category = req.query.category;
     const puzzles = await puzzleModel.aggregate([
       {
         $match: {
           category,
-          "creator.id": { $ne: userId },
         },
       },
       {
@@ -254,9 +260,8 @@ export const getScrollPuzzles = async (
   res: Response
 ) => {
   try {
-    const { userId } = getAuth(req);
     const { search, categories, difficulties, skip = 0, limit = 4 } = req.body;
-    let query: any = { "creator.id": { $ne: userId } };
+    let query: any = {};
     if (categories && categories.length !== 0) {
       query = { ...query, category: { $in: categories } };
     }
@@ -294,7 +299,7 @@ export const getDailyPuzzle = async (req: Request, res: Response) => {
       { userId },
       { "checkNewDay.timezone": 1, _id: 0 }
     );
-    if(!user) return res.json({success: false, message: "No user found."});
+    if (!user) return res.json({ success: false, message: "No user found." });
     const timezone = user.checkNewDay.timezone || "UTC";
     const dailyPuzzle = getGlobalDailyPuzzle(puzzles, timezone);
     res.json({
