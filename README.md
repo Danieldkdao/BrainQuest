@@ -12,7 +12,7 @@
 
 ## 🚀 Getting Started
 
-1. Clone the repository: `git clone https://github.com/user/my-awesome-project.git`
+1. Clone the repository: `git clone https://github.com/Danieldkdao/BrainQuest.git`
    ### Mobile
    1. Go into the mobile folder: `cd mobile`
    2. Install dependencies: `npm install`
