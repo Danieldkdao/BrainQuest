@@ -2,6 +2,7 @@ import { useAuth } from "@clerk/clerk-expo";
 import axios from "axios";
 import { useMemo } from "react";
 
+// const baseURL = "http://10.0.2.2:5000/api";
 const baseURL = process.env.EXPO_PUBLIC_BACKEND_URL;
 
 const useApi = () => {
