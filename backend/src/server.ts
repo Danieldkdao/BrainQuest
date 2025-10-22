@@ -43,8 +43,7 @@ app.use("/api/badges", badgeRoute);
 app.use("/api/challenges", challengeRoute);
 
 app.get("/", async (req: Request, res: Response) => {
-  const r = await userModel.find();
-  res.json(r);
+  res.send("Welcome to the BrainQuest backend!");
 });
 
 app.listen(PORT, () => console.log(`Server running on port ${PORT}.`));
