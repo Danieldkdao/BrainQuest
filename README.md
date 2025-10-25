@@ -44,4 +44,4 @@
    
 ## 🔗 Links
 
-> Youtube Video: [Intro to BrainQuest]("https://www.youtube.com/watch?v=yVew4DAWAns")
+> Youtube Video: [Intro to BrainQuest](https://www.youtube.com/watch?v=yVew4DAWAns)
