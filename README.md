@@ -44,4 +44,4 @@
    
 ## 🔗 Links
 
-> Youtube Video: [Intro to BrainQuest]("youtube.com")
+> Youtube Video: [Intro to BrainQuest]("https://www.youtube.com/watch?v=yVew4DAWAns")
