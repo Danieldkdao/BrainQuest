@@ -1,6 +1,6 @@
 # BrainQuest
 
-> This is an app I (Daniel Dao) designed and created to help people with their critcal thinking skills and puzzle solving skills. It is my submission for the 2025 Congressional App Challenge.
+> This is an app I (Daniel Dao) designed and created to help people with their critical thinking skills and puzzle solving skills. It is my submission for the 2025 Congressional App Challenge.
 
 ## ✨ Features
 
